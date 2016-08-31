@@ -43,6 +43,9 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static htsjdk.samtools.SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES;
 
 /**
  * Major class that coordinates the activities involved in comparing genetic fingerprint
@@ -262,13 +265,115 @@ public class FingerprintChecker {
         return intervals.uniqued();
     }
 
+
+    /**
+     * small class to hold the details of a element of fingerprinting PU tag
+     */
+
+    public static class FingerprintIdDetails {
+        String  platformUnit;
+        String  runBarcode;
+        Integer runLane;
+        String  molecularBarcode;
+        String  library;
+        String  sample;
+
+        FingerprintIdDetails(){
+
+        }
+
+        public FingerprintIdDetails(final SAMReadGroupRecord rg){
+            this(rg.getPlatformUnit());
+            this.sample = rg.getSample();
+            this.library = rg.getLibrary();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            FingerprintIdDetails that = (FingerprintIdDetails) o;
+
+            if (platformUnit != null ? !platformUnit.equals(that.platformUnit) : that.platformUnit != null)
+                return false;
+            if (runBarcode != null ? !runBarcode.equals(that.runBarcode) : that.runBarcode != null) return false;
+            if (runLane != null ? !runLane.equals(that.runLane) : that.runLane != null) return false;
+            if (molecularBarcode != null ? !molecularBarcode.equals(that.molecularBarcode) : that.molecularBarcode != null)
+                return false;
+            if (library != null ? !library.equals(that.library) : that.library != null) return false;
+            return sample != null ? sample.equals(that.sample) : that.sample == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = platformUnit != null ? platformUnit.hashCode() : 0;
+            result = 31 * result + (runBarcode != null ? runBarcode.hashCode() : 0);
+            result = 31 * result + (runLane != null ? runLane.hashCode() : 0);
+            result = 31 * result + (molecularBarcode != null ? molecularBarcode.hashCode() : 0);
+            result = 31 * result + (library != null ? library.hashCode() : 0);
+            result = 31 * result + (sample != null ? sample.hashCode() : 0);
+            return result;
+        }
+
+        public FingerprintIdDetails(String platformUnit){
+            getPlatformUnitDetails(platformUnit);
+            this.platformUnit = platformUnit;
+        }
+
+        public FingerprintIdDetails merge(FingerprintIdDetails other){
+            platformUnit = equalValueOrElse(platformUnit, other.platformUnit, "");
+            runBarcode = equalValueOrElse(runBarcode, other.runBarcode, "");
+            runLane = equalValueOrElse(runLane, other.runLane, -1);
+            library = equalValueOrElse(library, other.library, "");
+            sample = equalValueOrElse(sample, other.sample, "");
+            molecularBarcode = equalValueOrElse(molecularBarcode, other.molecularBarcode, "");
+
+            return this;
+        }
+
+
+        private <T> T equalValueOrElse(T lhs, T rhs, T orElse){
+            if (rhs == null) return lhs;
+            if (lhs == null) return rhs;
+
+            return lhs.equals(rhs)?lhs:orElse;
+        }
+
+
+        /**
+         * Fills the relevant fields from the plantformUnit string.
+         *
+         * @param puString platform Unit tag (from @RG) under consideration
+         */
+        private void getPlatformUnitDetails(final String puString) {
+
+            final String[] tmp = puString.split("\\."); // Expect to look like: D047KACXX110901.1.ACCAACTG
+            this.runBarcode = "?";
+            this.runLane = -1;
+            this.molecularBarcode = "?";
+            try {
+                if ((tmp.length == 3) || (tmp.length == 2)) {
+                    this.runBarcode = tmp[0];
+                    this.runLane = Integer.parseInt(tmp[1]);
+                    this.molecularBarcode = (tmp.length == 3) ? tmp[2] : "";  // In older BAMS there may be no molecular barcode sequence
+                } else {
+                    throw new IllegalArgumentException("Unexpected format " + puString + " for PU attribute");
+                }
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Unexpected format " + puString + " for PU attribute");
+            }
+        }
+    }
+
     /**
      * Generates a Fingerprint per read group in the supplied SAM file using the loci provided in
      * the interval list.
      */
-    public Map<SAMReadGroupRecord, Fingerprint> fingerprintSamFile(final File samFile, final IntervalList loci) {
-        final SAMFileReader in = new SAMFileReader(samFile);
-        in.enableIndexCaching(true);
+    public Map<FingerprintIdDetails, Fingerprint> fingerprintSamFile(final File samFile, final IntervalList loci) {
+        final SamReader in = SamReaderFactory.makeDefault().setOption(CACHE_FILE_BASED_INDEXES, true).open(samFile);
+
         SequenceUtil.assertSequenceDictionariesEqual(this.haplotypes.getHeader().getSequenceDictionary(),
                                                      in.getFileHeader().getSequenceDictionary());
 
@@ -286,13 +391,17 @@ public class FingerprintChecker {
             iterator.setSamFilters(filters);
         }
 
-        final Map<SAMReadGroupRecord, Fingerprint> fingerprintsByReadGroup = new HashMap<>();
-        final List<SAMReadGroupRecord> rgs = in.getFileHeader().getReadGroups();
+        final Map<FingerprintIdDetails, Fingerprint> fingerprintsByReadGroup = new HashMap<>();
+        final Collection<FingerprintIdDetails> rgs = in.getFileHeader().getReadGroups().stream().map(rg->
+        {FingerprintIdDetails id = new FingerprintIdDetails(rg.getPlatformUnit());
+         id.library = rg.getLibrary();
+         id.sample  = rg.getSample();
+         return id;}).collect(Collectors.toSet());
 
-        for (final SAMReadGroupRecord rg : rgs) {
-            final Fingerprint fingerprint = new Fingerprint(rg.getSample(),
+        for (final FingerprintIdDetails rg : rgs) {
+            final Fingerprint fingerprint = new Fingerprint(rg.sample,
                                                             samFile,
-                                                            rg.getPlatformUnit() != null ? rg.getPlatformUnit() : rg.getId());
+                                                            rg.platformUnit);
             fingerprintsByReadGroup.put(rg, fingerprint);
 
             for (final HaplotypeBlock h : this.haplotypes.getHaplotypes()) {
@@ -303,7 +412,7 @@ public class FingerprintChecker {
         // Set of read/template names from which we have already sampled a base and a qual. Since we assume
         // that all evidence for a haplotype is independent we can't sample two or more bases from a single
         // read or read-pair because they would not be independent!
-        final Set<String> usedReadNames = new HashSet<String>(10000);
+        final Set<String> usedReadNames = new HashSet<>(10000);
 
         // Now go through the data at each locus and figure stuff out!
         for (final SamLocusIterator.LocusInfo info : iterator) {
@@ -317,7 +426,13 @@ public class FingerprintChecker {
 
             for (final SamLocusIterator.RecordAndOffset rec : info.getRecordAndPositions()) {
                 final SAMReadGroupRecord rg = rec.getRecord().getReadGroup();
-                if (rg == null || !fingerprintsByReadGroup.containsKey(rg)) {
+                if (rg == null) {
+                    final PicardException e = new PicardException("Found read with no readgroup: " + rec.getRecord().getReadName());
+                    log.error(e);
+                    throw e;
+                }
+                final FingerprintIdDetails details = new FingerprintIdDetails(rg);
+                if (!fingerprintsByReadGroup.containsKey(details)) {
                     final PicardException e = new PicardException("Unknown read group: " + rg);
                     log.error(e);
                     throw e;
@@ -325,7 +440,7 @@ public class FingerprintChecker {
                 else {
                     final String readName = rec.getRecord().getReadName();
                     if (!usedReadNames.contains(readName)) {
-                        final HaplotypeProbabilitiesFromSequence probs = (HaplotypeProbabilitiesFromSequence) fingerprintsByReadGroup.get(rg).get(haplotypeBlock);
+                        final HaplotypeProbabilitiesFromSequence probs = (HaplotypeProbabilitiesFromSequence) fingerprintsByReadGroup.get(details).get(haplotypeBlock);
                         final byte base = StringUtil.toUpperCase(rec.getReadBase());
                         final byte qual = rec.getBaseQuality();
 
@@ -344,7 +459,7 @@ public class FingerprintChecker {
      * Data is aggregated by sample, not read-group.
      */
     public Map<String, Fingerprint> identifyContaminant(final File samFile, final double contamination, final int locusMaxReads) {
-        final SamReader in = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES).open(samFile);
+        final SamReader in = SamReaderFactory.makeDefault().enable(CACHE_FILE_BASED_INDEXES).open(samFile);
         SequenceUtil.assertSequenceDictionariesEqual(this.haplotypes.getHeader().getSequenceDictionary(),
                 in.getFileHeader().getSequenceDictionary());
 
@@ -446,14 +561,14 @@ public class FingerprintChecker {
      * Fingerprints one or more SAM/BAM files at all available loci within the haplotype map, using multiple threads
      * to speed up the processing.
      */
-    public Map<SAMReadGroupRecord, Fingerprint> fingerprintSamFiles(final Collection<File> files, final int threads,
+    public Map<FingerprintIdDetails, Fingerprint> fingerprintSamFiles(final Collection<File> files, final int threads,
                                                                     final int waitTime, final TimeUnit waitTimeUnit) {
 
         // Generate fingerprints from each BAM file first
         final AtomicInteger filesRead = new AtomicInteger(0);
         final ExecutorService executor = Executors.newFixedThreadPool(threads);
         final IntervalList intervals = this.haplotypes.getIntervalList();
-        final Map<SAMReadGroupRecord, Fingerprint> retval = new ConcurrentHashMap<>();
+        final Map<FingerprintIdDetails, Fingerprint> retval = new ConcurrentHashMap<>();
 
         for (final File f : files) {
             executor.submit(() -> {
@@ -520,7 +635,7 @@ public class FingerprintChecker {
 
         // Fingerprint the SAM files and calculate the results
         for (final File f : samFiles) {
-            final Map<SAMReadGroupRecord, Fingerprint> fingerprintsByReadGroup = fingerprintSamFile(f, intervals);
+            final Map<FingerprintIdDetails, Fingerprint> fingerprintsByReadGroup = fingerprintSamFile(f, intervals);
 
             if (ignoreReadGroups) {
                 final Fingerprint combinedFp = new Fingerprint(specificSample, f, null);
@@ -535,8 +650,8 @@ public class FingerprintChecker {
                 resultsList.add(results);
 
             } else {
-                for (final SAMReadGroupRecord rg : fingerprintsByReadGroup.keySet()) {
-                    final FingerprintResults results = new FingerprintResults(f, rg.getPlatformUnit(), specificSample);
+                for (final FingerprintIdDetails rg : fingerprintsByReadGroup.keySet()) {
+                    final FingerprintResults results = new FingerprintResults(f, rg.platformUnit, rg.sample);
                     for (final Fingerprint expectedFp : expectedFingerprints) {
                         final MatchResults result = calculateMatchResults(fingerprintsByReadGroup.get(rg), expectedFp, 0, pLossofHet);
                         results.addResults(result);

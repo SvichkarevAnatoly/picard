@@ -50,6 +50,9 @@ public class CollectTargetedMetricsTest extends CommandLineProgramTest {
         final File tempSamFileUnsorted = File.createTempFile("CollectTargetedMetrics", ".bam", TEST_DIR);
         tempSamFileUnsorted.deleteOnExit();
         tempSamFile.deleteOnExit();
+        final File sortedSamIdx = new File(TEST_DIR, tempSamFile.getName() + ".idx");
+        sortedSamIdx.deleteOnExit();
+
         final SAMFileHeader header = new SAMFileHeader();
 
         //Check that dictionary file is readable and then set header dictionary
@@ -90,6 +93,7 @@ public class CollectTargetedMetricsTest extends CommandLineProgramTest {
         //Write SAM file
         final SAMFileWriter writer = new SAMFileWriterFactory()
                 .setCreateIndex(true).makeBAMWriter(header, false, tempSamFileUnsorted);
+
 
         for (final SAMRecord record : setBuilder) {
             writer.addAlignment(record);
