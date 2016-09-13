@@ -47,8 +47,10 @@ import picard.util.MathUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.LongStream;
 
 import static picard.cmdline.StandardOptionDefinitions.MINIMUM_MAPPING_QUALITY_SHORT_NAME;
 
@@ -449,7 +451,7 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
             if (SequenceUtil.isNoCall(base)) continue;
 
             // add to the collector
-            collector.addInfo(info, ref);
+            collector.addInfo(info);
 
             // Record progress and perhaps stop
             progress.record(info.getSequenceName(), info.getPosition());
@@ -650,6 +652,8 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
             file.addHistogram(getBaseQHistogram());
         }
 
+
+        // TODO: update
         protected void addMetricsToFile(final MetricsFile<WgsMetrics, Integer> file,
                                         final CountingFilter dupeFilter,
                                         final CountingFilter mapqFilter,
@@ -663,12 +667,16 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
             file.addHistogram(depthHistogram);
         }
 
-        protected Histogram<Integer> getDepthHistogram() {
-            return getHistogram(depthHistogramArray,"coverage", "count");
+        protected Histogram<Integer> getHighQualityDepthHistogram() {
+            return getHistogram(highQualityDepthHistogramArray,"coverage", "count");
         }
 
-        protected Histogram<Integer> getBaseQHistogram() {
-            return getHistogram(baseQHistogramArray, "value", "baseq_count");
+        protected Histogram<Integer> getUnfilteredDepthHistogram(){
+            return getHistogram(unfilteredDepthHistogramArray, "coverage", "count");
+        }
+
+        protected Histogram<Integer> getUnfilteredBaseQHistogram() {
+            return getHistogram(unfilteredBaseQHistogramArray, "baseq", "count");
         }
 
         private Histogram<Integer> getHistogram(final long[] array, final String binLabel, final String valueLabel) {
