@@ -515,16 +515,16 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
     }
     
     private WgsMetrics generateWgsMetrics(final IntervalList intervals,
-                                            final Histogram<Integer> depthHistogram,
-                                            final long basesExcludedByMapq,
-                                            final long basesExcludedByDupes,
-                                            final long basesExcludedByPairing,
-                                            final long basesExcludedByBaseq,
-                                            final long basesExcludedByOverlap,
-                                            final long basesExcludedByCapping,
-                                            final int coverageCap,
-                                            final Histogram<Integer> baseQHistogram,
-                                            final int theoreticalHetSensitivitySampleSize) {
+                                          final Histogram<Integer> depthHistogram,
+                                          final long basesExcludedByMapq,
+                                          final long basesExcludedByDupes,
+                                          final long basesExcludedByPairing,
+                                          final long basesExcludedByBaseq,
+                                          final long basesExcludedByOverlap,
+                                          final long basesExcludedByCapping,
+                                          final int coverageCap,
+                                          final Histogram<Integer> baseQHistogram,
+                                          final int theoreticalHetSensitivitySampleSize) {
         final double total              = depthHistogram.getSum();
         final double totalWithExcludes  = total + basesExcludedByDupes + basesExcludedByMapq + basesExcludedByPairing + basesExcludedByBaseq + basesExcludedByOverlap + basesExcludedByCapping;
 
