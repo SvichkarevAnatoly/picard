@@ -573,8 +573,14 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
 
     protected class WgsMetricsCollector {
 
-        protected final long[] depthHistogramArray;
-        private   final long[] baseQHistogramArray;
+        // histogram of depths for theoretical het sensitivity. bases with quality = 2 are excluded (so they are not entirely unfiltered)
+        protected final long[] unfilteredDepthHistogramArray;
+
+        // histogram of base qualities for theoretical het sensitivity. bases with quality = 2 are excluded (so they are not entirely unfiltered)
+        protected final long[] unfilteredBaseQHistogramArray;
+
+        // histogram of depths at each locus. does not count bases with quality less than MINIMUM_BASE_QUALITY (default 20)
+        protected final long[] highQualityDepthHistogramArray;
 
         private long basesExcludedByBaseq = 0;
         private long basesExcludedByOverlap = 0;
@@ -583,32 +589,49 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         protected final int coverageCap;
 
         public WgsMetricsCollector(final int coverageCap, final IntervalList intervals) {
-            depthHistogramArray = new long[coverageCap + 1];
-            baseQHistogramArray = new long[Byte.MAX_VALUE];
+            unfilteredDepthHistogramArray = new long[coverageCap + 1];
+            highQualityDepthHistogramArray = new long[coverageCap + 1];
+            unfilteredBaseQHistogramArray = new long[Byte.MAX_VALUE];
             this.coverageCap    = coverageCap;
             this.intervals      = intervals;
         }
 
-        public void addInfo(final SamLocusIterator.LocusInfo info, final ReferenceSequence ref) {
-
-            // Figure out the coverage while not counting overlapping reads twice, and excluding various things
+        public void addInfo(final SamLocusIterator.LocusInfo info) {
             final HashSet<String> readNames = new HashSet<>(info.getRecordAndPositions().size());
-            int pileupSize = 0;
+            int numReadsVisited = 0;
+
+            // the depth at the locus. includes all but quality 2 bases
+            int rawDepth = 0;
+
+            // this one excludes bases of quality lower than 20
+            int highQualityDepth = 0;
+
             for (final SamLocusIterator.RecordAndOffset recs : info.getRecordAndPositions()) {
+                numReadsVisited++;
+                if (recs.getBaseQuality() <= 2 || SequenceUtil.isNoCall(recs.getReadBase())) { ++basesExcludedByBaseq; continue; } // TS: either create basesExcludedBecauseItsNoCall or make a seperate if clause
+                if (!readNames.add(recs.getRecord().getReadName())) { ++basesExcludedByOverlap; continue; }
 
-                if (recs.getBaseQuality() < MINIMUM_BASE_QUALITY ||
-                        SequenceUtil.isNoCall(recs.getReadBase()))                  { ++basesExcludedByBaseq;   continue; }
-                if (!readNames.add(recs.getRecord().getReadName()))                 { ++basesExcludedByOverlap; continue; }
-
-                pileupSize++;
-                if (pileupSize <= coverageCap) {
-                    baseQHistogramArray[recs.getRecord().getBaseQualities()[recs.getOffset()]]++;
+                // the raw depth may exceed the coverageCap before the high-quality depth does. So stop counting once we reach the coverage cap.
+                if (rawDepth < coverageCap) {
+                    unfilteredBaseQHistogramArray[recs.getRecord().getBaseQualities()[recs.getOffset()]]++;
+                    rawDepth++;
                 }
+
+                if (recs.getBaseQuality() < MINIMUM_BASE_QUALITY) continue;
+                highQualityDepth++;
+                if (highQualityDepth >= coverageCap) break;
             }
 
-            final int depth = Math.min(pileupSize, coverageCap);
-            if (depth < pileupSize) basesExcludedByCapping += pileupSize - coverageCap;
-            depthHistogramArray[depth]++;
+            if (highQualityDepth >= coverageCap) basesExcludedByCapping += info.getRecordAndPositions().size() - numReadsVisited;
+
+            if (rawDepth > coverageCap || highQualityDepth > coverageCap) throw new IllegalStateException("coverage exceeded the cap");
+            unfilteredDepthHistogramArray[rawDepth]++;
+            highQualityDepthHistogramArray[highQualityDepth]++;
+
+            // check that we added the same number of bases to the raw coverage histogram and the base quality histograms
+            if (Arrays.stream(unfilteredBaseQHistogramArray).sum() !=  LongStream.rangeClosed(0,coverageCap).map(i -> (i * unfilteredDepthHistogramArray[(int)i])).sum()) {
+                throw new PicardException("updated coverage and baseQ distributions unequally");
+            }
         }
 
         public void addToMetricsFile(final MetricsFile<WgsMetrics, Integer> file,
