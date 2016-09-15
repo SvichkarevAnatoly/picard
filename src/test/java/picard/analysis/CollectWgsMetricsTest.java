@@ -296,8 +296,8 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     @Test
     public void testExcludedBases() throws IOException {
         final File reference = new File("testdata/picard/quality/chrM.reference.fasta");
-        final File tempSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
-        tempSamFile.deleteOnExit();
+        final File testSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
+        testSamFile.deleteOnExit();
 
         /**
          *  Our test SAM looks as follows:
@@ -324,7 +324,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
             setBuilder.addPair("PoorBQRead:" + i, 0, 1, 30, false, false, "10M", "10M", false, true, 10);
         }
 
-        final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, tempSamFile);
+        final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, testSamFile);
 
         for (final SAMRecord record : setBuilder) {
             writer.addAlignment(record);
@@ -332,10 +332,10 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
 
         writer.close();
 
-        final File outfile = createTestSAM(setBuilder, "testExcludedBases-metrics");
+        final File outfile = createTestSAM(setBuilder, "testExcludedBases-metrics", testSamFile);
 
         final String[] args = new String[] {
-                "INPUT="  + tempSamFile.getAbsolutePath(),
+                "INPUT="  + testSamFile.getAbsolutePath(),
                 "OUTPUT=" + outfile.getAbsolutePath(),
                 "REFERENCE_SEQUENCE=" + reference.getAbsolutePath(),
                 "INCLUDE_BQ_HISTOGRAM=true",
@@ -384,8 +384,8 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     }
 
 
-    private File createTestSAM(SAMRecordSetBuilder setBuilder, String metricsFileName) throws IOException {
-        final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, tempSamFile);
+    private File createTestSAM(SAMRecordSetBuilder setBuilder, String metricsFileName, File samFile) throws IOException {
+        final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, samFile);
 
         for (final SAMRecord record : setBuilder) {
             writer.addAlignment(record);
