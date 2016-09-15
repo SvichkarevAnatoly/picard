@@ -332,7 +332,8 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
 
         writer.close();
 
-        final File outfile = createTestSAM(setBuilder, "testExcludedBases-metrics", testSamFile);
+        final File outfile = File.createTempFile("testExcludedBases-metrics", ".txt");
+        outfile.deleteOnExit();
 
         final String[] args = new String[] {
                 "INPUT="  + testSamFile.getAbsolutePath(),
@@ -355,7 +356,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     }
 
     // TODO: add support for sorted/unsorted SAM
-    // TODO: rename as appropriate
+    // TODO: rename appropriately
     private SAMRecordSetBuilder createTestSAMBuilder(final File reference){
         final SAMFileHeader header = new SAMFileHeader();
 
@@ -381,22 +382,6 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         setBuilder.setHeader(header);
 
         return(setBuilder);
-    }
-
-
-    private File createTestSAM(SAMRecordSetBuilder setBuilder, String metricsFileName, File samFile) throws IOException {
-        final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, samFile);
-
-        for (final SAMRecord record : setBuilder) {
-            writer.addAlignment(record);
-        }
-
-        writer.close();
-
-        final File outfile = File.createTempFile(metricsFileName, ".txt");
-        outfile.deleteOnExit();
-
-        return(outfile);
     }
 
 }
