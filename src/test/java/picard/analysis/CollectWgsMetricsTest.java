@@ -35,7 +35,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     private File tempSamFile;
     private File outfile;
 
-    private final static int LENGTH = 99;
+    private final static int READ_PAIR_DISTANCE = 99;
     private final static String SAMPLE = "TestSample1";
     private final static String READ_GROUP_ID = "TestReadGroup1";
     private final static String PLATFORM = "ILLUMINA";
@@ -74,7 +74,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         for (final CollectWgsMetrics.WgsMetrics metrics : output.getMetrics()) {
             Assert.assertEquals(metrics.MEAN_COVERAGE, 13.985155, .02);
             Assert.assertEquals(metrics.PCT_EXC_OVERLAP, 0.0);  // 52 of 606 bases
-            Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.399906, .02);    // 114 of 606 bases
+            Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.399906, .02);    // 114 of 606 bases // TODO: check
             Assert.assertEquals(metrics.PCT_EXC_DUPE, 0.0);    // 202 of 606 bases
             Assert.assertEquals(metrics.SD_COVERAGE, 57.364434, .02);
             Assert.assertEquals(metrics.MEDIAN_COVERAGE, 0.0);
@@ -146,7 +146,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         for (int i = 0; i < NUM_READS; i++) {
             final int start = rg.nextInt(maxReadStart) + minReadStart;
             final String newReadName = readName + separator + ID + separator + i;
-            setBuilder.addPair(newReadName, 0, start + ID, start + ID + LENGTH);
+            setBuilder.addPair(newReadName, 0, start + ID, start + ID + READ_PAIR_DISTANCE);
         }
 
         //Write SAM file
