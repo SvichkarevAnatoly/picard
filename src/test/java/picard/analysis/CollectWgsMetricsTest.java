@@ -308,9 +308,8 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
          *   **********
          *   **********
          *
-         *  We stagger the reads as shown above so that SamLocusIterator visits the good base quality reads first.
-         *  When the coverage cap is 3, and when we always see the good quality bases at each locus, we always ignore the poor quality
-         *  bases due to the coverage cap. In other words, we should not increment basesExcludedByBaseq for those baess.
+         *  We exclude half of the bases because they are low quality.
+         *  We do not exceed the coverage cap (3), thus none of the bases is excluded as such.
          *
          */
 
@@ -349,8 +348,8 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
 
         final CollectWgsMetrics.WgsMetrics metrics = output.getMetrics().get(0);
 
-        Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.0);
-        Assert.assertEquals(metrics.PCT_EXC_CAPPED, 60/120);
+        Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.5);
+        Assert.assertEquals(metrics.PCT_EXC_CAPPED, 0.0);
 
     }
 

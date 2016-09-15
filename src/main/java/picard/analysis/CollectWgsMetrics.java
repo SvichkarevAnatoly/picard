@@ -618,36 +618,33 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         }
 
         public void addInfo(final SamLocusIterator.LocusInfo info) {
+
+            // Figure out the coverage while not counting overlapping reads twice, and excluding various things
             final HashSet<String> readNames = new HashSet<>(info.getRecordAndPositions().size());
-            int numReadsVisited = 0;
-
-            // the depth at the locus. includes all but quality 2 bases
-            int rawDepth = 0;
-
-            // this one excludes bases of quality lower than 20
-            int highQualityDepth = 0;
+            int pileupSize = 0;
+            int unfilteredDepth = 0;
 
             for (final SamLocusIterator.RecordAndOffset recs : info.getRecordAndPositions()) {
-                numReadsVisited++;
-                if (recs.getBaseQuality() <= 2 || SequenceUtil.isNoCall(recs.getReadBase())) { ++basesExcludedByBaseq; continue; } // TS: either create basesExcludedBecauseItsNoCall or make a seperate if clause
-                if (!readNames.add(recs.getRecord().getReadName())) { ++basesExcludedByOverlap; continue; }
+                if (recs.getBaseQuality() <= 2) { ++basesExcludedByBaseq;   continue; }
 
+                // we add to the base quality histogram any bases that have quality > 2
                 // the raw depth may exceed the coverageCap before the high-quality depth does. So stop counting once we reach the coverage cap.
-                if (rawDepth < coverageCap) {
+                if (unfilteredDepth < coverageCap) {
                     unfilteredBaseQHistogramArray[recs.getRecord().getBaseQualities()[recs.getOffset()]]++;
-                    rawDepth++;
+                    unfilteredDepth++;
                 }
 
-                if (recs.getBaseQuality() < MINIMUM_BASE_QUALITY) continue;
-                highQualityDepth++;
-                if (highQualityDepth >= coverageCap) break;
+                if (recs.getBaseQuality() < MINIMUM_BASE_QUALITY ||
+                        SequenceUtil.isNoCall(recs.getReadBase()))                  { ++basesExcludedByBaseq;   continue; }
+                if (!readNames.add(recs.getRecord().getReadName()))                 { ++basesExcludedByOverlap; continue; }
+
+                pileupSize++;
             }
 
-            if (highQualityDepth >= coverageCap) basesExcludedByCapping += info.getRecordAndPositions().size() - numReadsVisited;
-
-            if (rawDepth > coverageCap || highQualityDepth > coverageCap) throw new IllegalStateException("coverage exceeded the cap");
-            unfilteredDepthHistogramArray[rawDepth]++;
+            final int highQualityDepth = Math.min(pileupSize, coverageCap);
+            if (highQualityDepth < pileupSize) basesExcludedByCapping += pileupSize - coverageCap;
             highQualityDepthHistogramArray[highQualityDepth]++;
+            unfilteredDepthHistogramArray[unfilteredDepth]++;
 
             // check that we added the same number of bases to the raw coverage histogram and the base quality histograms
             if (Arrays.stream(unfilteredBaseQHistogramArray).sum() !=  LongStream.rangeClosed(0,coverageCap).map(i -> (i * unfilteredDepthHistogramArray[(int)i])).sum()) {
