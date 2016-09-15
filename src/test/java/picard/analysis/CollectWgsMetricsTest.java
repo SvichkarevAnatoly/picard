@@ -281,13 +281,14 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         output.read(new FileReader(outfile));
         final CollectWgsMetrics.WgsMetrics metrics = output.getMetrics().get(0);
 
-        final Histogram<Integer> depthHistogram = output.getAllHistograms().get(0);
+        final Histogram<Integer> highQualityDepthHistogram = output.getAllHistograms().get(0);
         final Histogram<Integer> baseQHistogram = output.getAllHistograms().get(1);
 
-        Assert.assertEquals((long) depthHistogram.getSumOfValues(), metrics.GENOME_TERRITORY);
-        Assert.assertEquals(baseQHistogram.getSumOfValues(), depthHistogram.getSum());
-        Assert.assertEquals((long) depthHistogram.get(1).getValue(), expectedSingltonCoverage);
-        Assert.assertEquals((long) depthHistogram.get(3).getValue(), 2*10);
+        Assert.assertEquals((long) highQualityDepthHistogram.getSumOfValues(), metrics.GENOME_TERRITORY);
+        // This test no longer applies as we add low quality bases to the base quality distribution
+        // Assert.assertEquals(baseQHistogram.getSumOfValues(), depthHistogram.getSum());
+        Assert.assertEquals((long) highQualityDepthHistogram.get(1).getValue(), expectedSingltonCoverage);
+        Assert.assertEquals((long) highQualityDepthHistogram.get(3).getValue(), 2*10);
 
     }
 
@@ -299,7 +300,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         tempSamFile.deleteOnExit();
 
         /**
-         *  Our test reads look as follows:
+         *  Our test SAM looks as follows:
          *
          *   ----------   <- reads with great base qualities (60)
          *   ----------

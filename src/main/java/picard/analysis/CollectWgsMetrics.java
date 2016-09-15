@@ -661,7 +661,7 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
 
             // add them to the file
             file.addMetric(metrics);
-            file.addHistogram(getUnfilteredBaseQHistogram());
+            file.addHistogram(getHighQualityDepthHistogram());
 
             if (includeBQHistogram) {
                 addBaseQHistogram(file);
