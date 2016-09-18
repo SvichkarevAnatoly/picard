@@ -94,7 +94,6 @@ public class CollectTargetedMetricsTest extends CommandLineProgramTest {
         final SAMFileWriter writer = new SAMFileWriterFactory()
                 .setCreateIndex(true).makeBAMWriter(header, false, tempSamFileUnsorted);
 
-
         for (final SAMRecord record : setBuilder) {
             writer.addAlignment(record);
         }

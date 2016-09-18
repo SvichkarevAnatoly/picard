@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toSet;
 import static picard.fingerprint.CrosscheckMetric.FingerprintResult.*;
 import static picard.fingerprint.CrosscheckMetric.FingerprintResult;
-import static picard.fingerprint.FingerprintChecker.*;
 
 /**
  * Program to check that all (read-)groups within the set of BAM files appear to come from the same

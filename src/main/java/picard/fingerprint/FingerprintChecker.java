@@ -30,7 +30,6 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.filter.NotPrimaryAlignmentFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.*;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -244,7 +243,6 @@ public class FingerprintChecker {
         return true;
     }
 
-
     /**
      * Takes a set of fingerprints and returns an IntervalList containing all the loci that
      * can be productively examined in sequencing data to compare to one or more of the
@@ -263,108 +261,6 @@ public class FingerprintChecker {
         }
 
         return intervals.uniqued();
-    }
-
-
-    /**
-     * small class to hold the details of a element of fingerprinting PU tag
-     */
-
-    public static class FingerprintIdDetails {
-        String  platformUnit;
-        String  runBarcode;
-        Integer runLane;
-        String  molecularBarcode;
-        String  library;
-        String  sample;
-
-        FingerprintIdDetails(){
-
-        }
-
-        public FingerprintIdDetails(final SAMReadGroupRecord rg){
-            this(rg.getPlatformUnit());
-            this.sample = rg.getSample();
-            this.library = rg.getLibrary();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            FingerprintIdDetails that = (FingerprintIdDetails) o;
-
-            if (platformUnit != null ? !platformUnit.equals(that.platformUnit) : that.platformUnit != null)
-                return false;
-            if (runBarcode != null ? !runBarcode.equals(that.runBarcode) : that.runBarcode != null) return false;
-            if (runLane != null ? !runLane.equals(that.runLane) : that.runLane != null) return false;
-            if (molecularBarcode != null ? !molecularBarcode.equals(that.molecularBarcode) : that.molecularBarcode != null)
-                return false;
-            if (library != null ? !library.equals(that.library) : that.library != null) return false;
-            return sample != null ? sample.equals(that.sample) : that.sample == null;
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = platformUnit != null ? platformUnit.hashCode() : 0;
-            result = 31 * result + (runBarcode != null ? runBarcode.hashCode() : 0);
-            result = 31 * result + (runLane != null ? runLane.hashCode() : 0);
-            result = 31 * result + (molecularBarcode != null ? molecularBarcode.hashCode() : 0);
-            result = 31 * result + (library != null ? library.hashCode() : 0);
-            result = 31 * result + (sample != null ? sample.hashCode() : 0);
-            return result;
-        }
-
-        public FingerprintIdDetails(String platformUnit){
-            getPlatformUnitDetails(platformUnit);
-            this.platformUnit = platformUnit;
-        }
-
-        public FingerprintIdDetails merge(FingerprintIdDetails other){
-            platformUnit = equalValueOrElse(platformUnit, other.platformUnit, "");
-            runBarcode = equalValueOrElse(runBarcode, other.runBarcode, "");
-            runLane = equalValueOrElse(runLane, other.runLane, -1);
-            library = equalValueOrElse(library, other.library, "");
-            sample = equalValueOrElse(sample, other.sample, "");
-            molecularBarcode = equalValueOrElse(molecularBarcode, other.molecularBarcode, "");
-
-            return this;
-        }
-
-
-        private <T> T equalValueOrElse(T lhs, T rhs, T orElse){
-            if (rhs == null) return lhs;
-            if (lhs == null) return rhs;
-
-            return lhs.equals(rhs)?lhs:orElse;
-        }
-
-
-        /**
-         * Fills the relevant fields from the plantformUnit string.
-         *
-         * @param puString platform Unit tag (from @RG) under consideration
-         */
-        private void getPlatformUnitDetails(final String puString) {
-
-            final String[] tmp = puString.split("\\."); // Expect to look like: D047KACXX110901.1.ACCAACTG
-            this.runBarcode = "?";
-            this.runLane = -1;
-            this.molecularBarcode = "?";
-            try {
-                if ((tmp.length == 3) || (tmp.length == 2)) {
-                    this.runBarcode = tmp[0];
-                    this.runLane = Integer.parseInt(tmp[1]);
-                    this.molecularBarcode = (tmp.length == 3) ? tmp[2] : "";  // In older BAMS there may be no molecular barcode sequence
-                } else {
-                    throw new IllegalArgumentException("Unexpected format " + puString + " for PU attribute");
-                }
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Unexpected format " + puString + " for PU attribute");
-            }
-        }
     }
 
     /**
@@ -436,8 +332,7 @@ public class FingerprintChecker {
                     final PicardException e = new PicardException("Unknown read group: " + rg);
                     log.error(e);
                     throw e;
-                }
-                else {
+                } else {
                     final String readName = rec.getRecord().getReadName();
                     if (!usedReadNames.contains(readName)) {
                         final HaplotypeProbabilitiesFromSequence probs = (HaplotypeProbabilitiesFromSequence) fingerprintsByReadGroup.get(details).get(haplotypeBlock);

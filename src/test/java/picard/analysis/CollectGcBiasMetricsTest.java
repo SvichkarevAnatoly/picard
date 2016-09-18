@@ -67,10 +67,8 @@ public class CollectGcBiasMetricsTest extends CommandLineProgramTest {
         tempSamFileChrM_O.deleteOnExit();
         tempSamFileAllChr.deleteOnExit();
 
-
         final File tempSamFileUnsorted = File.createTempFile("CollectGcBias", ".bam", TEST_DIR);
         tempSamFileUnsorted.deleteOnExit();
-
 
         final SAMFileHeader header = new SAMFileHeader();
 
@@ -222,8 +220,9 @@ public class CollectGcBiasMetricsTest extends CommandLineProgramTest {
             if (metrics.ACCUMULATION_LEVEL.equals("All Reads")) {
                 Assert.assertEquals(metrics.WINDOWS, details.get(i).WINDOWS);
                 i++;
+            } else {
+                break;
             }
-            else {break;}
         }
     }
 
@@ -241,7 +240,7 @@ public class CollectGcBiasMetricsTest extends CommandLineProgramTest {
         final SAMFileWriter writer = new SAMFileWriterFactory()
                 .setCreateIndex(true).makeBAMWriter(header, false, unsortedSam);
 
-        for( final SAMRecordSetBuilder subSetBuilder : setBuilder){
+        for (final SAMRecordSetBuilder subSetBuilder : setBuilder){
             for (final SAMRecord record : subSetBuilder) {
                 writer.addAlignment(record);
             }
