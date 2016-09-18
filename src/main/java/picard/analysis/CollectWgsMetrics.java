@@ -497,6 +497,37 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         return this.header;
     }
 
+
+    protected WgsMetrics generateWgsMetrics(final IntervalList intervals,
+                                            final Histogram<Integer> highQualityDepthHistogram,
+                                            final Histogram<Integer> unfilteredDepthHistogram,
+                                            final double pctExcludedByMapq,
+                                            final double pctExcludedByDupes,
+                                            final double pctExcludedByPairing,
+                                            final double pctExcludedByBaseq,
+                                            final double pctExcludedByOverlap,
+                                            final double pctExcludedByCapping,
+                                            final double pctTotal,
+                                            final int coverageCap,
+                                            final Histogram<Integer> unfilteredBaseQHistogram,
+                                            final int theoreticalHetSensitivitySampleSize) {
+        return new WgsMetrics(
+                intervals,
+                highQualityDepthHistogram,
+                unfilteredDepthHistogram,
+                pctExcludedByMapq,
+                pctExcludedByDupes,
+                pctExcludedByPairing,
+                pctExcludedByBaseq,
+                pctExcludedByOverlap,
+                pctExcludedByCapping,
+                pctTotal,
+                coverageCap,
+                unfilteredBaseQHistogram,
+                theoreticalHetSensitivitySampleSize
+        );
+    }
+
     // TODO: we don't need to pass around depthHistogram in these methods
     private WgsMetrics generateWgsMetrics(final IntervalList intervals,
                                           final Histogram<Integer> highQualityDepthHistogram,
@@ -541,35 +572,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         );
     }
 
-    protected WgsMetrics generateWgsMetrics(final IntervalList intervals,
-                                          final Histogram<Integer> highQualityDepthHistogram,
-                                          final Histogram<Integer> unfilteredDepthHistogram,
-                                          final double pctExcludedByMapq,
-                                          final double pctExcludedByDupes,
-                                          final double pctExcludedByPairing,
-                                          final double pctExcludedByBaseq,
-                                          final double pctExcludedByOverlap,
-                                          final double pctExcludedByCapping,
-                                          final double pctTotal,
-                                          final int coverageCap,
-                                          final Histogram<Integer> unfilteredBaseQHistogram,
-                                          final int theoreticalHetSensitivitySampleSize) {
-        return new WgsMetrics(
-                intervals,
-                highQualityDepthHistogram,
-                unfilteredDepthHistogram,
-                pctExcludedByMapq,
-                pctExcludedByDupes,
-                pctExcludedByPairing,
-                pctExcludedByBaseq,
-                pctExcludedByOverlap,
-                pctExcludedByCapping,
-                pctTotal,
-                coverageCap,
-                unfilteredBaseQHistogram,
-                theoreticalHetSensitivitySampleSize
-        );
-    }
 
     /**
      * If INTERVALS is specified, this will count bases beyond the interval list when the read overlaps the intervals and extends beyond the
