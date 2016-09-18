@@ -541,8 +541,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
                                           final int coverageCap,
                                           final Histogram<Integer> unfilteredBaseQHistogram,
                                           final int theoreticalHetSensitivitySampleSize) {
-        // TS: why convert to a Histogram object? we can compute mean(), median(), std() off an array
-
         final double total = highQualityDepthHistogram.getSum();
         final double totalWithExcludes = total + basesExcludedByDupes + basesExcludedByMapq + basesExcludedByPairing + basesExcludedByBaseq + basesExcludedByOverlap + basesExcludedByCapping;
 
