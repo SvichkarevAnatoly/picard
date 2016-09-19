@@ -110,8 +110,6 @@ public class CollectWgsMetricsWithNonZeroCoverage extends CollectWgsMetrics {
     @Override
     protected int doWork() {
         IOUtil.assertFileIsWritable(CHART_OUTPUT);
-
-        this.collector = new WgsMetricsWithNonZeroCoverageCollector(COVERAGE_CAP, getIntervalsToExamine());
         return super.doWork();
 
         // Plotting code doesn't work - commented for now.
@@ -164,8 +162,9 @@ public class CollectWgsMetricsWithNonZeroCoverage extends CollectWgsMetrics {
 
     @Override
     protected WgsMetricsCollector getCollector(final int coverageCap, final IntervalList intervals) {
-        assert(coverageCap == this.collector.coverageCap);
-        return this.collector;
+        if (collector != null) throw new PicardException("A WGSMetricsCollector already exists");
+        collector = new WgsMetricsWithNonZeroCoverageCollector(COVERAGE_CAP, intervals);
+        return collector;
     }
 
     protected class WgsMetricsWithNonZeroCoverageCollector extends WgsMetricsCollector {
