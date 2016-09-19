@@ -68,20 +68,21 @@ public class CollectWgsMetricsTestUtils {
         final String platform = "Illumina";
         final String library = "TestLibrary";
         final int numReads = 1;
+        final int readLength = 10;
 
         File samFile = File.createTempFile("TestSam", ".bam", testDir);
         samFile.deleteOnExit();
 
         final SAMRecordSetBuilder setBuilder = createTestSAMBuilder(reference, readGroupId, sample, platform, library);
-        setBuilder.setReadLength(100);
+        setBuilder.setReadLength(readLength);
 
         for (int i = 0; i < numReads; i++){
-            setBuilder.addPair("MediocreBaseQ" + i, 0, 1, 200, false, false, "100M", "100M", false, true, 20);
+            setBuilder.addPair("MediocreBaseQ" + i, 0, 1, 200, false, false, readLength + "M", readLength + "M", false, true, 40);
         }
 
-        for (int i = 0; i < numReads; i++){
-            setBuilder.addPair("PoorBaseQ" + i, 0, 1, 200, false, false, "100M", "100M", false, true, 2);
-        }
+//        for (int i = 0; i < numReads; i++){
+//            setBuilder.addPair("PoorBaseQ" + i, 0, 1, 200, false, false, readLength + "M", readLength + "M", false, true, 2);
+//        }
 
         final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, samFile);
 
