@@ -40,12 +40,12 @@ public class CollectWgsMetricsWithNonZeroCoverageTest extends CommandLineProgram
         /**
          *  Our test SAM looks as follows:
          *
-         *   ----------   <- reads with great base qualities (60)
-         *   ----------
-         *   ----------
-         *   **********   <- reads with poor base qualities (10)
-         *   **********
-         *   **********
+         *   ----------   <- reads with great base qualities (60) ->  ----------
+         *   ----------                                               ----------
+         *   ----------                                               ----------
+         *   **********   <- reads with poor base qualities (10) ->   **********
+         *   **********                                               **********
+         *   **********                                               **********
          *
          *  We exclude half of the bases because they are low quality.
          *  We do not exceed the coverage cap (3), thus none of the bases is excluded as such.
@@ -92,10 +92,16 @@ public class CollectWgsMetricsWithNonZeroCoverageTest extends CommandLineProgram
         output.read(new FileReader(outfile));
 
         final CollectWgsMetrics.WgsMetrics metrics = output.getMetrics().get(0);
+        final CollectWgsMetrics.WgsMetrics nonZeroMetrics = output.getMetrics().get(1);
 
-        Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.5);
-        Assert.assertEquals(metrics.PCT_EXC_CAPPED, 0.0);
 
+        // Some metrics should not change between with and without zero
+        Assert.assertEquals(nonZeroMetrics.PCT_EXC_BASEQ, metrics.PCT_EXC_BASEQ);
+        Assert.assertEquals(nonZeroMetrics.PCT_EXC_CAPPED, metrics.PCT_EXC_CAPPED);
+
+        // Other metrics change when we ignore the zero depth bin
+        Assert.assertEquals(nonZeroMetrics.GENOME_TERRITORY, 20);
+        Assert.assertEquals(nonZeroMetrics.MEAN_COVERAGE, 3.0);
     }
 
     // TODO: put this in a util class to be shared with CollectWgsMetricsTest.java
