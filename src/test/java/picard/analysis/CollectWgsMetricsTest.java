@@ -295,7 +295,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     // TODO: rename
     @Test
     public void testExcludedBases() throws IOException {
-        final File reference = new File("testdata/picard/quality/chrM.reference.fasta");
+        final File reference = new File("testdata/picard/analysis/directed/CollectHsMetrics/chrM.fasta");
         final File testSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
         testSamFile.deleteOnExit();
 
@@ -317,7 +317,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         final SAMRecordSetBuilder setBuilder = CollectWgsMetricsTestUtils.createTestSAMBuilder(reference, READ_GROUP_ID, SAMPLE, PLATFORM, LIBRARY);
         setBuilder.setReadLength(10);
         for (int i = 0; i < 3; i++){
-            setBuilder.addPair("GreatBQRead:" + i, 0, 1, 30, false, false, "10M", "10M", false, true, 60);
+            setBuilder.addPair("GreatBQRead:" + i, 0, 1, 30, false, false, "10M", "10M", false, true, 40);
         }
 
         for (int i = 0; i < 3; i++){
