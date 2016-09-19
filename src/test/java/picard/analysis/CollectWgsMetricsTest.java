@@ -74,7 +74,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         for (final CollectWgsMetrics.WgsMetrics metrics : output.getMetrics()) {
             Assert.assertEquals(metrics.MEAN_COVERAGE, 13.985155, .02);
             Assert.assertEquals(metrics.PCT_EXC_OVERLAP, 0.0);  // 52 of 606 bases
-            Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.399906, .02);    // 114 of 606 bases // TODO: check
+            Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.399906, .02);    // 114 of 606 bases
             Assert.assertEquals(metrics.PCT_EXC_DUPE, 0.0);    // 202 of 606 bases
             Assert.assertEquals(metrics.SD_COVERAGE, 57.364434, .02);
             Assert.assertEquals(metrics.MEDIAN_COVERAGE, 0.0);
@@ -209,30 +209,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         tempSamFile.deleteOnExit();
 
 
-        // TODO: refactor to use createSAM
-        final SAMFileHeader header = new SAMFileHeader();
-
-        //Check that dictionary file is readable and then set header dictionary
-        try {
-            header.setSequenceDictionary(SAMSequenceDictionaryExtractor.extractDictionary(reference));
-            header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
-        } catch (final SAMException e) {
-            e.printStackTrace();
-        }
-
-        //Set readGroupRecord
-        final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
-        readGroupRecord.setSample(SAMPLE);
-        readGroupRecord.setPlatform(PLATFORM);
-        readGroupRecord.setLibrary(LIBRARY);
-        readGroupRecord.setPlatformUnit(READ_GROUP_ID);
-        header.addReadGroup(readGroupRecord);
-
-        //Add to setBuilder
-        final SAMRecordSetBuilder setBuilder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, 100);
-        setBuilder.setReadGroup(readGroupRecord);
-        setBuilder.setUseNmFlag(true);
-        setBuilder.setHeader(header);
+        final SAMRecordSetBuilder setBuilder = CollectWgsMetricsTestUtils.createTestSAMBuilder(reference, READ_GROUP_ID, SAMPLE, PLATFORM, LIBRARY);
 
         setBuilder.setReadLength(10);
 
@@ -257,7 +234,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
 
         // Write SAM file
         final SAMFileWriter writer = new SAMFileWriterFactory()
-                .setCreateIndex(true).makeBAMWriter(header, false, tempSamFile);
+                .setCreateIndex(true).makeBAMWriter(setBuilder.getHeader(), false, tempSamFile);
 
         for (final SAMRecord record : setBuilder) {
             writer.addAlignment(record);
