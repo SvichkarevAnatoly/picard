@@ -15,13 +15,7 @@ import java.io.IOException;
 import static org.testng.Assert.*;
 
 public class CollectWgsMetricsWithNonZeroCoverageTest extends CommandLineProgramTest {
-    private final static File REF_DICT_DIR = new File("testdata/picard/sam/CollectGcBiasMetrics/");
     private final static File TEST_DIR = new File("testdata/picard/sam/");
-    private final File referenceDict = new File(REF_DICT_DIR, "MSmallHeader.dict");
-    private File tempSamFile;
-    private File outfile;
-
-    private final static int READ_PAIR_DISTANCE = 99;
     private final static String SAMPLE = "TestSample1";
     private final static String READ_GROUP_ID = "TestReadGroup1";
     private final static String PLATFORM = "ILLUMINA";

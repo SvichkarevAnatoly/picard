@@ -203,7 +203,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     }
 
     @Test
-    public void testPoorQualityBases() throws IOException {
+    public void testExclusions() throws IOException {
         final File reference = new File("testdata/picard/sam/merger.fasta");
         final File tempSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
         tempSamFile.deleteOnExit();
@@ -269,10 +269,9 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
 
     }
 
-    // TODO: rename
     @Test
-    public void testExcludedBases() throws IOException {
-        final File reference = new File("testdata/picard/analysis/directed/CollectHsMetrics/chrM.fasta");
+    public void testPoorQualityBases() throws IOException {
+        final File reference = new File("testdata/picard/quality/chrM.reference.fasta");
         final File testSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
         testSamFile.deleteOnExit();
 

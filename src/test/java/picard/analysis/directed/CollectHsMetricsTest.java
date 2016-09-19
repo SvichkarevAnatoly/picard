@@ -85,17 +85,18 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
         }
     }
 
-    /** A read 10 base pairs long. two intervals: one maps identically to the read, other does not overlap at all
-     *
-     *  intervals:    [----------]          [----------]
-     *  read:          xxxxxxxxxx
-     *
-     *  Test that the depth histogram is [10,10,0,...,0]
-     */
-
-
     @Test
     public void testCoverageHistogram() throws IOException {
+
+        /**
+         *  A read 10 base pairs long. two intervals: one maps identically to the read, other does not overlap at all
+         *
+         *  intervals:    [----------]          [----------]
+         *  read:          xxxxxxxxxx
+         *
+         *  Test that the depth histogram is [10,10,0,...,0]
+         */
+
         final String input = TEST_DIR + "/single-short-read.sam";
         final String targetIntervals = TEST_DIR + "/two-small.interval_list";
         final int minimumMappingQuality = 20;
