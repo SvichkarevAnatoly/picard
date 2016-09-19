@@ -314,7 +314,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
          *
          */
 
-        final SAMRecordSetBuilder setBuilder = createTestSAMBuilder(reference);
+        final SAMRecordSetBuilder setBuilder = CollectWgsMetricsTestUtils.createTestSAMBuilder(reference, READ_GROUP_ID, SAMPLE, PLATFORM, LIBRARY);
         setBuilder.setReadLength(10);
         for (int i = 0; i < 3; i++){
             setBuilder.addPair("GreatBQRead:" + i, 0, 1, 30, false, false, "10M", "10M", false, true, 60);
@@ -353,35 +353,6 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         Assert.assertEquals(metrics.PCT_EXC_BASEQ, 0.5);
         Assert.assertEquals(metrics.PCT_EXC_CAPPED, 0.0);
 
-    }
-
-    // TODO: add support for sorted/unsorted SAM
-    // TODO: rename appropriately
-    private SAMRecordSetBuilder createTestSAMBuilder(final File reference){
-        final SAMFileHeader header = new SAMFileHeader();
-
-        //Check that dictionary file is readable and then set header dictionary
-        try {
-            header.setSequenceDictionary(SAMSequenceDictionaryExtractor.extractDictionary(reference));
-            header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
-        } catch (final SAMException e) {
-            e.printStackTrace();
-        }
-
-        //Set readGroupRecord
-        final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
-        readGroupRecord.setSample(SAMPLE);
-        readGroupRecord.setPlatform(PLATFORM);
-        readGroupRecord.setLibrary(LIBRARY);
-        readGroupRecord.setPlatformUnit(READ_GROUP_ID);
-        header.addReadGroup(readGroupRecord);
-
-        final SAMRecordSetBuilder setBuilder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, 100);
-        setBuilder.setReadGroup(readGroupRecord);
-        setBuilder.setUseNmFlag(true);
-        setBuilder.setHeader(header);
-
-        return(setBuilder);
     }
 
 }
