@@ -1,6 +1,7 @@
 package picard.analysis.directed;
 
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.Histogram;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -84,5 +85,37 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
             Assert.assertEquals(metrics.PCT_TARGET_BASES_1X, pctTargetBases1x);
             Assert.assertEquals(metrics.PCT_TARGET_BASES_2X, pctTargetBases2x);
         }
+    }
+
+    @Test
+    public void testCoverageHistogram() throws IOException {
+        final String input = TEST_DIR + "/single-short-read.sam";
+        final String targetIntervals = TEST_DIR + "/two-small.interval_list";
+        final int minimumMappingQuality = 20;
+        final int minimumBaseQuality = 20;
+        final boolean clipOverlappingReads = true;
+        final int sampleSize = 10;
+
+        final File outfile = File.createTempFile("testCoverageHistogram", ".hs_metrics", TEST_DIR);
+        outfile.deleteOnExit();
+
+        final String[] args = new String[] {
+                "TARGET_INTERVALS=" + targetIntervals,
+                "BAIT_INTERVALS=" + targetIntervals,
+                "INPUT=" + input,
+                "OUTPUT=" + outfile,
+                "MINIMUM_MAPPING_QUALITY=" + minimumMappingQuality,
+                "MINIMUM_BASE_QUALITY=" + minimumBaseQuality,
+                "CLIP_OVERLAPPING_READS=" + clipOverlappingReads,
+                "SAMPLE_SIZE=" + sampleSize
+        };
+
+        Assert.assertEquals(runPicardCommandLine(args), 0);
+
+        final MetricsFile<HsMetrics, Integer> output = new MetricsFile<>();
+        output.read(new FileReader(outfile));
+        final Histogram<Integer> coverageHistogram = output.getAllHistograms().get(0);
+        Assert.assertEquals(coverageHistogram.get(0).getValue(), 10.0);
+        Assert.assertEquals(coverageHistogram.get(1).getValue(), 10.0);
     }
 }
