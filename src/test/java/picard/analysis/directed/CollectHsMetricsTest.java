@@ -28,24 +28,22 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
         return new Object[][] {
                 // test that all bases (read 2) with base quality 1 are filtered out
                 // TODO: base quality minimum should not be 1 - pick something higher
-                {TEST_DIR + "/lowbaseq.sam",    referenceFile, intervals, "NONE", 1, 10, true,  2, 200, 0.5, 0.0, 0.50, 0.0,   1000},
+                {TEST_DIR + "/lowbaseq.sam",    intervals, 1, 10, true,  2, 200, 0.5, 0.0, 0.50, 0.0,   1000},
                 // test that read 2 (with mapping quality 1) is filtered out with minimum mapping quality 2
-                {TEST_DIR + "/lowmapq.sam",     referenceFile, intervals, "NONE", 2, 0, true,  2, 202, 0,   0.0, 0.505, 0.0,   1000},
+                {TEST_DIR + "/lowmapq.sam",     intervals, 2, 0, true,  2, 202, 0,   0.0, 0.505, 0.0,   1000},
                 // test that we clip overlapping bases
-                {TEST_DIR + "/overlapping.sam", referenceFile, intervals, "NONE", 0, 0, true,  2, 202, 0,   0.5, 0.505, 0.505, 1000},
+                {TEST_DIR + "/overlapping.sam", intervals, 0, 0, true,  2, 202, 0,   0.5, 0.505, 0.505, 1000},
                 // test that we do not clip overlapping bases
-                {TEST_DIR + "/overlapping.sam", referenceFile, intervals, "NONE", 0, 0, false, 2, 202, 0,   0.0, 0.505, 0.505, 1000},
+                {TEST_DIR + "/overlapping.sam", intervals, 0, 0, false, 2, 202, 0,   0.0, 0.505, 0.505, 1000},
                 // 0 bin test TODO: better title
-                {TEST_DIR + "/single-short-read.sam", referenceFile, twoSmallIntervals, "NONE", 20, 20, true, 1, 10, 0.0, 0.0, 0.5, 0.0, 1000 }
+                {TEST_DIR + "/single-short-read.sam", twoSmallIntervals, 20, 20, true, 1, 10, 0.0, 0.0, 0.5, 0.0, 1000 }
 
         };
     }
 
     @Test(dataProvider = "collectHsMetricsDataProvider")
     public void runCollectTargetedMetricsTest(final String input,
-                                              final String referenceFile,
                                               final String targetIntervals,
-                                              final String metricsFile,
                                               final int minimumMappingQuality,
                                               final int minimumBaseQuality,
                                               final boolean clipOverlappingReads,
