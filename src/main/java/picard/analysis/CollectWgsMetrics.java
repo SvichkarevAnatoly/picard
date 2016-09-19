@@ -186,7 +186,7 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
          * @param theoreticalHetSensitivitySampleSize the sample size used for theoretical het sensitivity sampling.
          */
         public WgsMetrics(final IntervalList intervals,
-                          final Histogram<Integer> highQualityDepthHistogram, // TODO: change to long
+                          final Histogram<Integer> highQualityDepthHistogram,
                           final Histogram<Integer> unfilteredDepthHistogram,
                           final double pctExcludedByMapq,
                           final double pctExcludedByDupes,
@@ -369,7 +369,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
                 depthHistogramArray[depth] += bin.getValue();
             }
 
-            // TODO: questionable cast - just make a histogram of Long
             GENOME_TERRITORY = (long) highQualityDepthHistogram.getSumOfValues();
             MEAN_COVERAGE    = highQualityDepthHistogram.getMean();
             SD_COVERAGE      = highQualityDepthHistogram.getStandardDeviation();

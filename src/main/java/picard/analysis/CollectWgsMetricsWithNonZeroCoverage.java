@@ -86,7 +86,7 @@ public class CollectWgsMetricsWithNonZeroCoverage extends CollectWgsMetrics {
         }
 
         public WgsMetricsWithNonZeroCoverage(final IntervalList intervals,
-                                             final Histogram<Integer> highQualityDepthHistogram, // TODO: change to long
+                                             final Histogram<Integer> highQualityDepthHistogram,
                                              final Histogram<Integer> unfilteredDepthHistogram,
                                              final double pctExcludedByMapq,
                                              final double pctExcludedByDupes,
