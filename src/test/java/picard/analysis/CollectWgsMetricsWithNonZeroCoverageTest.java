@@ -32,7 +32,7 @@ public class CollectWgsMetricsWithNonZeroCoverageTest extends CommandLineProgram
     }
 
     @Test
-    public void testExcludedBases() throws IOException {
+    public void testPoorQualityBases() throws IOException {
         final File reference = new File("testdata/picard/quality/chrM.reference.fasta");
         final File testSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
         testSamFile.deleteOnExit();

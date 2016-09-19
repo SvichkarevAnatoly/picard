@@ -51,7 +51,7 @@ public class WgsMetricsTest {
         return new CollectWgsMetrics.WgsMetrics(
                 buildIntervalList(start, start),
                 singleDepthHistogram(depth, count),
-                singleDepthHistogram(depth, count), // TODO: review that this is appropriate
+                singleDepthHistogram(depth, count),
                 10d * countScale / count, 20d * countScale / count, 30d * countScale / count,
                 40d * countScale / count, 50d * countScale / count, 60d * countScale / count,
                 totalExcluded / (double) (count + totalExcluded),

@@ -118,11 +118,14 @@ public abstract class TargetMetricsCollector<METRIC_TYPE extends MultilevelMetri
 
     private final int sampleSize;
 
-
-    // TODO: add documentations
-    private final Histogram<Integer> baseQHistogram = new Histogram<>("baseq", "count");
+    // histogram of depths. does not include bases with quality less than MINIMUM_BASE_QUALITY (default 20)
     private final Histogram<Integer> highQualityDepthHistogram = new Histogram<>("coverage", "count");
+
+    // histogram of base qualities. includes all but quality 2 bases. we use this histogram to calculate theoretical het sensitivity.
     private final Histogram<Integer> unfilteredDepthHistogram = new Histogram<>("coverage", "count");
+
+    // histogram of base qualities. includes all but quality 2 bases. we use this histogram to calculate theoretical het sensitivity.
+    private final Histogram<Integer> unfilteredBaseQHistogram = new Histogram<>("baseq", "count");
 
     private static final double LOG_ODDS_THRESHOLD = 3.0;
 
@@ -545,7 +548,6 @@ public abstract class TargetMetricsCollector<METRIC_TYPE extends MultilevelMetri
                     final int readPos = readStart + offset;
                     final int qual = baseQualities[readPos - 1];
 
-                    // TODO: define a static constant for 2 (maybe name it WORST_POSSIBLE_BASE_QUALITY)
                     if (qual <= 2) {
                         metrics.PCT_EXC_BASEQ++;
                         continue;
@@ -699,7 +701,7 @@ public abstract class TargetMetricsCollector<METRIC_TYPE extends MultilevelMetri
 
             // TODO: normalize the arrays directly. then we don't have to convert to Histograms
             for (int i=0; i<baseQHistogramArray.length; ++i) {
-                baseQHistogram.increment(i, baseQHistogramArray[i]);
+                unfilteredBaseQHistogram.increment(i, baseQHistogramArray[i]);
             }
 
             for (int i = 0; i < unfilteredDepthHistogramArray.length; i++){
@@ -707,7 +709,7 @@ public abstract class TargetMetricsCollector<METRIC_TYPE extends MultilevelMetri
             }
 
             final double [] depthDoubleArray = TheoreticalSensitivity.normalizeHistogram(unfilteredDepthHistogram);
-            final double [] baseQDoubleArray = TheoreticalSensitivity.normalizeHistogram(baseQHistogram);
+            final double [] baseQDoubleArray = TheoreticalSensitivity.normalizeHistogram(unfilteredBaseQHistogram);
             metrics.HET_SNP_SENSITIVITY = TheoreticalSensitivity.hetSNPSensitivity(depthDoubleArray, baseQDoubleArray, sampleSize, LOG_ODDS_THRESHOLD);
             metrics.HET_SNP_Q = QualityUtil.getPhredScoreFromErrorProbability((1 - metrics.HET_SNP_SENSITIVITY));
 
@@ -837,7 +839,7 @@ public abstract class TargetMetricsCollector<METRIC_TYPE extends MultilevelMetri
         public void addMetricsToFile(final MetricsFile<METRIC_TYPE, Integer> hsMetricsComparableMetricsFile) {
             hsMetricsComparableMetricsFile.addMetric(convertMetric(this.metrics));
             hsMetricsComparableMetricsFile.addHistogram(highQualityDepthHistogram);
-            hsMetricsComparableMetricsFile.addHistogram(baseQHistogram);
+            hsMetricsComparableMetricsFile.addHistogram(unfilteredBaseQHistogram);
         }
     }
 

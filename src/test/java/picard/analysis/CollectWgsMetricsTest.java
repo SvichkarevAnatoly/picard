@@ -203,7 +203,7 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
     }
 
     @Test
-    public void testExclusions() throws IOException {
+    public void testPoorQualityBases() throws IOException {
         final File reference = new File("testdata/picard/sam/merger.fasta");
         final File tempSamFile = File.createTempFile("CollectWgsMetrics", ".bam", TEST_DIR);
         tempSamFile.deleteOnExit();

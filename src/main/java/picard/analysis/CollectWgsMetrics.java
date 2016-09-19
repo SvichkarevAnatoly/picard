@@ -591,13 +591,13 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
 
     protected class WgsMetricsCollector {
 
-        // histogram of depths for theoretical het sensitivity. bases with quality = 2 are excluded (so they are not entirely unfiltered)
+        // histogram of depths. includes all but quality 2 bases. we use this histogram to calculate theoretical het sensitivity.
         protected final long[] unfilteredDepthHistogramArray;
 
-        // histogram of base qualities for theoretical het sensitivity. bases with quality = 2 are excluded (so they are not entirely unfiltered)
+        // histogram of base qualities. includes all but quality 2 bases. we use this histogram to calculate theoretical het sensitivity.
         protected final long[] unfilteredBaseQHistogramArray;
 
-        // histogram of depths at each locus. does not count bases with quality less than MINIMUM_BASE_QUALITY (default 20)
+        // histogram of depths. does not include bases with quality less than MINIMUM_BASE_QUALITY (default 20)
         protected final long[] highQualityDepthHistogramArray;
 
         private long basesExcludedByBaseq = 0;
