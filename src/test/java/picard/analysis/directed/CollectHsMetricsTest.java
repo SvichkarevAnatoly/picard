@@ -26,8 +26,8 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
         final String twoSmallIntervals = TEST_DIR + "/two-small.interval_list";
 
         return new Object[][] {
-                // test that all bases (read 2) with base quality 1 are filtered out
-                // TODO: base quality minimum should not be 1 - pick something higher
+                // two reads, each has 100 bases. bases in one read are medium quality (20), in the other read poor quality (10).
+                // test that we exclude half of the bases
                 {TEST_DIR + "/lowbaseq.sam",    intervals, 1, 10, true,  2, 200, 0.5, 0.0, 0.50, 0.0,   1000},
                 // test that read 2 (with mapping quality 1) is filtered out with minimum mapping quality 2
                 {TEST_DIR + "/lowmapq.sam",     intervals, 2, 0, true,  2, 202, 0,   0.0, 0.505, 0.0,   1000},
@@ -35,7 +35,7 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
                 {TEST_DIR + "/overlapping.sam", intervals, 0, 0, true,  2, 202, 0,   0.5, 0.505, 0.505, 1000},
                 // test that we do not clip overlapping bases
                 {TEST_DIR + "/overlapping.sam", intervals, 0, 0, false, 2, 202, 0,   0.0, 0.505, 0.505, 1000},
-                // 0 bin test TODO: better title
+                // A read 10 base pairs long. two intervals: one maps identically to the read, other does not overlap at all
                 {TEST_DIR + "/single-short-read.sam", twoSmallIntervals, 20, 20, true, 1, 10, 0.0, 0.0, 0.5, 0.0, 1000 }
 
         };
@@ -84,6 +84,15 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
             Assert.assertEquals(metrics.PCT_TARGET_BASES_2X, pctTargetBases2x);
         }
     }
+
+    /** A read 10 base pairs long. two intervals: one maps identically to the read, other does not overlap at all
+     *
+     *  intervals:    [----------]          [----------]
+     *  read:          xxxxxxxxxx
+     *
+     *  Test that the depth histogram is [10,10,0,...,0]
+     */
+
 
     @Test
     public void testCoverageHistogram() throws IOException {

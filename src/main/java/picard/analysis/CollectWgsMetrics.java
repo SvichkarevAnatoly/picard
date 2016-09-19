@@ -137,11 +137,11 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         @MergingIsManual
         protected IntervalList intervals;
 
-        /** The count of sites with a given observed depth. */
+        /** The histogram of coverages. Excludes bases with quality below MINIMUM_BASE_QUALITY */
         @MergingIsManual
         protected final Histogram<Integer> highQualityDepthHistogram;
 
-        /** TODO: document. is merging manual? **/
+        /** The histogram of coverages. Includes all but quality 2 bases */
         @MergingIsManual
         protected final Histogram<Integer> unfilteredDepthHistogram;
 
@@ -172,8 +172,8 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         /**
          * Create an instance of this metric that is mergeable.
          *
-         * @param highQualityDepthHistogram the count of genomic positions observed for each observed depth. TODO: review. add unfiltered
-         * @param unfilteredDepthHistogram TODO: docs
+         * @param highQualityDepthHistogram the count of genomic positions observed for each observed depth. excludes bases with quality below MINIMUM_BASE_QUALITY.
+         * @param unfilteredDepthHistogram the depth histogram that includes all but quality 2 bases.
          * @param pctExcludedByMapq the fraction of aligned bases that were filtered out because they were in reads with low mapping quality.
          * @param pctExcludedByDupes the fraction of aligned bases that were filtered out because they were in reads marked as duplicates.
          * @param pctExcludedByPairing the fraction of bases that were filtered out because they were in reads without a mapped mate pair.
@@ -182,7 +182,7 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
          * @param pctExcludedByCapping the fraction of aligned bases that were filtered out because they would have raised coverage above the capped value.
          * @param pctExcludeTotal the fraction of bases excluded across all filters.
          * @param coverageCap Treat positions with coverage exceeding this value as if they had coverage at this value.
-         * @param unfilteredBaseQHistogram the count of bases observed with a given quality. // TODO update
+         * @param unfilteredBaseQHistogram the count of bases observed with a given quality. includes all but quality 2 bases.
          * @param theoreticalHetSensitivitySampleSize the sample size used for theoretical het sensitivity sampling.
          */
         public WgsMetrics(final IntervalList intervals,
@@ -364,7 +364,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
 
             final long[] depthHistogramArray = new long[coverageCap+1];
 
-            // TODO: why are we converting the histogram back to an array...
             for (final Histogram.Bin<Integer> bin : highQualityDepthHistogram.values()) {
                 final int depth = Math.min((int) bin.getIdValue(), coverageCap);
                 depthHistogramArray[depth] += bin.getValue();
@@ -528,7 +527,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         );
     }
 
-    // TODO: we don't need to pass around depthHistogram in these methods
     private WgsMetrics generateWgsMetrics(final IntervalList intervals,
                                           final Histogram<Integer> highQualityDepthHistogram,
                                           final Histogram<Integer> unfilteredDepthHistogram,
@@ -544,7 +542,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
         final double total = highQualityDepthHistogram.getSum();
         final double totalWithExcludes = total + basesExcludedByDupes + basesExcludedByMapq + basesExcludedByPairing + basesExcludedByBaseq + basesExcludedByOverlap + basesExcludedByCapping;
 
-        // TODO: refactor
         final double pctExcludedByMapq = totalWithExcludes == 0 ? 0 : basesExcludedByMapq / totalWithExcludes;
         final double pctExcludedByDupes = totalWithExcludes == 0 ? 0 : basesExcludedByDupes / totalWithExcludes;
         final double pctExcludedByPairing = totalWithExcludes == 0 ? 0 : basesExcludedByPairing / totalWithExcludes;
@@ -668,7 +665,6 @@ static final String USAGE_DETAILS = "<p>This tool collects metrics about the fra
             }
         }
 
-        // TODO: shouldn't be a standalone method
         protected void addBaseQHistogram(final MetricsFile<WgsMetrics, Integer> file) {
             file.addHistogram(getUnfilteredBaseQHistogram());
         }
