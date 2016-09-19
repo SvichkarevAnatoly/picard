@@ -302,12 +302,12 @@ public class CollectWgsMetricsTest extends CommandLineProgramTest {
         /**
          *  Our test SAM looks as follows:
          *
-         *   ----------   <- reads with great base qualities (60)
-         *   ----------
-         *   ----------
-         *   **********   <- reads with poor base qualities (10)
-         *   **********
-         *   **********
+         *   ----------   <- reads with great base qualities (60) ->  ----------
+         *   ----------                                               ----------
+         *   ----------                                               ----------
+         *   **********   <- reads with poor base qualities (10) ->   **********
+         *   **********                                               **********
+         *   **********                                               **********
          *
          *  We exclude half of the bases because they are low quality.
          *  We do not exceed the coverage cap (3), thus none of the bases is excluded as such.
