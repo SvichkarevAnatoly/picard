@@ -48,7 +48,7 @@ import static picard.fingerprint.CrosscheckMetric.FingerprintResult;
 
 /**
  * Program to check that all (read-)groups within the set of BAM files appear to come from the same
- * individual. Can br used to cross-check libraries or samples too.
+ * individual. Can be used to cross-check libraries or samples too.
  *
  * @author Tim Fennell
  * @author Yossi Farjoun
@@ -74,7 +74,7 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
     @Option(shortName = "LOD",
             doc = "If any two groups (with the same sample name) match with a LOD score lower than the threshold " +
                     "the program will exit with a non-zero code to indicate error." +
-                    " Program will also exit with an error if it finds two groups with different sample name that" +
+                    " Program will also exit with an error if it finds two groups with different sample name that " +
                     "match with a LOD score greater than -LOD_THRESHOLD." +
                     "\n\n" +
                     "LOD score 0 means equal likelihood" +
