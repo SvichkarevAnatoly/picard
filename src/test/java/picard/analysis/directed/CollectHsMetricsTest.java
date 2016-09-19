@@ -78,7 +78,7 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
         for (final HsMetrics metrics : output.getMetrics()) {
             // overlap
             Assert.assertEquals(metrics.TOTAL_READS, totalReads);
-            // Assert.assertEquals(metrics.PF_UQ_BASES_ALIGNED, pfUqBasesAligned);
+            Assert.assertEquals(metrics.PF_UQ_BASES_ALIGNED, pfUqBasesAligned);
             Assert.assertEquals(metrics.PCT_EXC_BASEQ, pctExcBaseq);
             Assert.assertEquals(metrics.PCT_EXC_OVERLAP, pctExcOverlap);
             Assert.assertEquals(metrics.PCT_TARGET_BASES_1X, pctTargetBases1x);
