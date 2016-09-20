@@ -86,7 +86,7 @@ public class CollectHsMetricsTest extends CommandLineProgramTest {
     }
 
     @Test
-    public void testCoverageHistogram() throws IOException {
+        public void testCoverageHistogram() throws IOException {
 
         /**
          *  A read 10 base pairs long. two intervals: one maps identically to the read, other does not overlap at all
