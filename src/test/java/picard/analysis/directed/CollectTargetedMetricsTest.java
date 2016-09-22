@@ -23,7 +23,7 @@ import java.util.Random;
 
 public class CollectTargetedMetricsTest extends CommandLineProgramTest {
     private final static File TEST_DIR = new File("testdata/picard/sam/CollectGcBiasMetrics/");
-    private final File dict = new File(TEST_DIR, "Mheader.dict");
+    private final File dict = new File("testdata/picard/quality/chrM.reference.dict");
     private File tempSamFile;
     private File outfile;
     private File perTargetOutfile;
