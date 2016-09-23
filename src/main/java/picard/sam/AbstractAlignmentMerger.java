@@ -351,9 +351,10 @@ public abstract class AbstractAlignmentMerger {
 
             // See if there are alignments for current unaligned read or read pair.
             if (nextAligned != null && rec.getReadName().equals(nextAligned.getReadName())) {
-                // If there are multiple alignments for a read (pair), then the unaligned SAMRecord must be cloned
-                // before copying info from the aligned record to the unaligned.
-                final boolean clone = nextAligned.numHits() > 1 || nextAligned.hasSupplementalHits();
+                // If there are multiple alignments for a read (pair), then the unaligned SAMRecord must be deep copied
+                // before copying info from the aligned record to the unaligned. Cloning in htsjdk is not deep enough
+                // since the bases can be reverse complemented in the case where one read aligns to both strands.
+                final boolean deepCopy = nextAligned.numHits() > 1 || nextAligned.hasSupplementalHits();
                 SAMRecord r1Primary = null, r2Primary = null;
 
                 // by this point there should be a single chosen primary alignment, which we will use to determine whether the read is contaminant.
@@ -372,9 +373,9 @@ public abstract class AbstractAlignmentMerger {
 
                         final SAMRecord firstToWrite;
                         final SAMRecord secondToWrite;
-                        if (clone) {
-                            firstToWrite = clone(rec);
-                            secondToWrite = clone(secondOfPair);
+                        if (deepCopy) {
+                            firstToWrite = rec.deepCopy();
+                            secondToWrite = secondOfPair.deepCopy();
                         } else {
                             firstToWrite = rec;
                             secondToWrite = secondOfPair;
@@ -409,7 +410,7 @@ public abstract class AbstractAlignmentMerger {
                         final SAMRecord matePrimary = isRead1 ? r2Primary : r1Primary;
 
                         for (final SAMRecord supp : supplementals) {
-                            final SAMRecord out = clone(sourceRec);
+                            final SAMRecord out = sourceRec.deepCopy();
                             transferAlignmentInfoToFragment(out, supp, unmapDueToContaminant);
                             if (matePrimary != null) SamPairUtil.setMateInformationOnSupplementalAlignment(out, matePrimary, addMateCigar);
                             // don't write supplementary reads that were unmapped by transferAlignmentInfoToFragment
@@ -421,7 +422,7 @@ public abstract class AbstractAlignmentMerger {
                     }
                 } else {
                     for (int i = 0; i < nextAligned.numHits(); ++i) {
-                        final SAMRecord recToWrite = clone ? clone(rec) : rec;
+                        final SAMRecord recToWrite = deepCopy ? rec.deepCopy() : rec;
                         final boolean isPrimary = !nextAligned.getFragment(i).isSecondaryOrSupplementary();
                         transferAlignmentInfoToFragment(recToWrite, nextAligned.getFragment(i), unmapDueToContaminant);
                         // Only write unmapped read if it was originally the primary.
@@ -432,7 +433,7 @@ public abstract class AbstractAlignmentMerger {
                     }
                     // Take all of the supplemental reads which had been stashed and add them (as appropriate) to sorted
                     for (final SAMRecord supplementalRec : nextAligned.getSupplementalFirstOfPairOrFragment()) {
-                        final SAMRecord recToWrite = clone(rec);
+                        final SAMRecord recToWrite = rec.deepCopy();
                         transferAlignmentInfoToFragment(recToWrite, supplementalRec, unmapDueToContaminant);
                         // don't write supplementary reads that were unmapped by transferAlignmentInfoToFragment
                         if (!recToWrite.getReadUnmappedFlag()) {
@@ -517,14 +518,6 @@ public abstract class AbstractAlignmentMerger {
         if (includeSecondaryAlignments || !rec.getNotPrimaryAlignmentFlag()) {
             out.add(rec);
             this.progress.record(rec);
-        }
-    }
-
-    private SAMRecord clone(final SAMRecord rec) {
-        try {
-            return (SAMRecord) rec.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new PicardException("Should never happen.");
         }
     }
 
