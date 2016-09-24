@@ -38,17 +38,19 @@ public class FingerprintIdDetails {
     Integer runLane;
     String molecularBarcode;
     String library;
+    String source;
     String sample;
 
     public FingerprintIdDetails() {}
 
-    public FingerprintIdDetails(String platformUnit) {
+    public FingerprintIdDetails(String platformUnit, String source) {
         getPlatformUnitDetails(platformUnit);
         this.platformUnit = platformUnit;
+        this.source = source;
     }
 
-    public FingerprintIdDetails(final SAMReadGroupRecord rg) {
-        this(rg.getPlatformUnit());
+    public FingerprintIdDetails(final SAMReadGroupRecord rg, String source) {
+        this(rg.getPlatformUnit(), source);
         this.sample = rg.getSample();
         this.library = rg.getLibrary();
     }
@@ -66,6 +68,8 @@ public class FingerprintIdDetails {
         if (molecularBarcode != null ? !molecularBarcode.equals(that.molecularBarcode) : that.molecularBarcode != null)
             return false;
         if (library != null ? !library.equals(that.library) : that.library != null) return false;
+        if (source != null ? !source.equals(that.source) : that.source != null) return false;
+
         return sample != null ? sample.equals(that.sample) : that.sample == null;
 
     }
@@ -77,6 +81,7 @@ public class FingerprintIdDetails {
         result = 31 * result + (runLane != null ? runLane.hashCode() : 0);
         result = 31 * result + (molecularBarcode != null ? molecularBarcode.hashCode() : 0);
         result = 31 * result + (library != null ? library.hashCode() : 0);
+        result = 31 * result + (source!= null ? source.hashCode() : 0);
         result = 31 * result + (sample != null ? sample.hashCode() : 0);
         return result;
     }
@@ -86,6 +91,7 @@ public class FingerprintIdDetails {
         runBarcode = equalValueOrElse(runBarcode, other.runBarcode, "");
         runLane = equalValueOrElse(runLane, other.runLane, -1);
         library = equalValueOrElse(library, other.library, "");
+        source = equalValueOrElse(source, other.source, "");
         sample = equalValueOrElse(sample, other.sample, "");
         molecularBarcode = equalValueOrElse(molecularBarcode, other.molecularBarcode, "");
 

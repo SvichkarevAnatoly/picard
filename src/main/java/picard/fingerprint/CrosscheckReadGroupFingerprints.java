@@ -29,6 +29,7 @@ import htsjdk.samtools.BamFileIoUtils;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import picard.PicardException;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
@@ -83,11 +84,9 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
                     " the groups are from the sample individual. ")
     public double LOD_THRESHOLD = 0;
 
-    @Option(doc = "Roll fingerprints up to the library level and compare libraries against each other", mutex = {"CROSSCHECK_SAMPLES"})
-    public boolean CROSSCHECK_LIBRARIES = false;
-
-    @Option(doc = "Roll fingerprints up to the sample level and compare samples against each other.", mutex = {"CROSSCHECK_LIBRARIES"})
-    public boolean CROSSCHECK_SAMPLES = false;
+    @Option(doc = "Which data-type should crosscheck use as the basic comparison unit? Fingerprints from readgroups can " +
+            "be \"rolled-up\" to the library, or file, or sample level before being compared.")
+    public CrosscheckMetric.DataType CROSSCHECK_BY = CrosscheckMetric.DataType.READGROUP;
 
     @Option(doc = "The number of threads to use to process BAM files and generate Fingerprints.")
     public int NUM_THREADS = 1;
@@ -104,7 +103,7 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
     public double LOSS_OF_HET_RATE = 0.5;
 
     @Option(doc = "Expect all groups' fingerprints to match, irrespective of their sample names.  By default (with this value set to " +
-            "false), groups (readgroups, libraries or samples) with different sample names are expected to mismatch, and those with the " +
+            "false), groups (readgroups, libraries, files, or samples) with different sample names are expected to mismatch, and those with the " +
             "same sample name are expected to match. ")
     public boolean EXPECT_ALL_GROUPS_TO_MATCH = false;
 
@@ -136,15 +135,25 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
         log.info("Finished generating fingerprints from BAM files, moving on to cross-checking.");
 
         final List<CrosscheckMetric> metrics = new ArrayList<>();
-
+        final Function<FingerprintIdDetails, String> groupBy;
         final int numUnexpected;
-        if (CROSSCHECK_SAMPLES) {
-            numUnexpected = crossCheckGrouped(fpMap, metrics, entry -> entry.getKey().sample, CrosscheckMetric.DataType.SAMPLE);
-        } else if (CROSSCHECK_LIBRARIES) {
-            numUnexpected = crossCheckGrouped(fpMap, metrics, entry -> entry.getKey().sample + "::" + entry.getKey().library, CrosscheckMetric.DataType.LIBRARY);
-        } else {
-            numUnexpected = crossCheckFingerprints(fpMap, CrosscheckMetric.DataType.READGROUP, metrics);
+        switch (CROSSCHECK_BY) {
+            case READGROUP:
+                groupBy=details->details.platformUnit;
+                break;
+            case LIBRARY:
+                groupBy = details -> details.sample + "::" + details.library;
+                break;
+            case SOURCE:
+                groupBy = details -> details.source;
+                break;
+            case SAMPLE:
+                groupBy = details -> details.sample;
+                break;
+            default:
+                throw new PicardException("unpossible");
         }
+        numUnexpected = crossCheckGrouped(fpMap, metrics, groupBy, CROSSCHECK_BY);
 
         MetricsFile<CrosscheckMetric, ?> metricsFile = getMetricsFile();
 
@@ -169,36 +178,36 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
      * and then produces a matrix of LOD scores for comparing every sample with every other sample.
      */
     private int crossCheckGrouped(final Map<FingerprintIdDetails, Fingerprint> fingerprints, final List<CrosscheckMetric> metrics,
-                                  final Function<Map.Entry<FingerprintIdDetails, Fingerprint>, String> by,
+                                  final Function<FingerprintIdDetails, String> by,
                                   CrosscheckMetric.DataType type) {
 
-        //collect the various entries according to the grouping "by"
+        // collect the various entries according to the grouping "by"
         final Map<String, List<Map.Entry<FingerprintIdDetails, Fingerprint>>> collection =
                 fingerprints.entrySet()
                         .stream()
-                        .collect(Collectors.groupingBy(by));
+                        .collect(Collectors.groupingBy(entry->by.apply(entry.getKey())));
 
-        Map<FingerprintIdDetails, Fingerprint> fingerprintsByLibrary = collection.entrySet().stream()
+        Map<FingerprintIdDetails, Fingerprint> fingerprintsByGroup = collection.entrySet().stream()
                 .collect(Collectors.toMap(
                         entry -> {
-        //merge the keys (unequal values are eliminated).
+        // merge the keys (unequal values are eliminated).
 
                             final FingerprintIdDetails finalId = new FingerprintIdDetails();
                             entry.getValue().stream().forEach(id -> finalId.merge(id.getKey()));
                             return finalId;
 
                         }, entry -> {
-        //merge the values by merging the fingerprints.
+        // merge the values by merging the fingerprints.
 
                             final FingerprintIdDetails firstDetail = entry.getValue().get(0).getKey();
                             //use the "by" function to determine the "info" part of the fingerprint
-                            final Fingerprint sampleFp = new Fingerprint(firstDetail.sample, null, by.apply(entry.getValue().get(0)));
+                            final Fingerprint sampleFp = new Fingerprint(firstDetail.sample, null, by.apply(firstDetail));
                             entry.getValue().stream().map(Map.Entry::getValue).collect(toSet()).forEach(sampleFp::merge);
                             return sampleFp;
 
                         }));
 
-        return crossCheckFingerprints(fingerprintsByLibrary, type, metrics);
+        return crossCheckFingerprints(fingerprintsByGroup, type, metrics);
     }
 
     /**

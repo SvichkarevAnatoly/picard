@@ -289,7 +289,7 @@ public class FingerprintChecker {
 
         final Map<FingerprintIdDetails, Fingerprint> fingerprintsByReadGroup = new HashMap<>();
         final Collection<FingerprintIdDetails> rgs = in.getFileHeader().getReadGroups().stream().map(rg->
-        {FingerprintIdDetails id = new FingerprintIdDetails(rg.getPlatformUnit());
+        {FingerprintIdDetails id = new FingerprintIdDetails(rg.getPlatformUnit(), samFile.getAbsolutePath());
          id.library = rg.getLibrary();
          id.sample  = rg.getSample();
          return id;}).collect(Collectors.toSet());
@@ -327,7 +327,7 @@ public class FingerprintChecker {
                     log.error(e);
                     throw e;
                 }
-                final FingerprintIdDetails details = new FingerprintIdDetails(rg);
+                final FingerprintIdDetails details = new FingerprintIdDetails(rg, samFile.getAbsolutePath());
                 if (!fingerprintsByReadGroup.containsKey(details)) {
                     final PicardException e = new PicardException("Unknown read group: " + rg);
                     log.error(e);

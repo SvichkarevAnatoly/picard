@@ -60,6 +60,7 @@ public class CrosscheckMetric extends MetricBase {
     }
 
     public enum DataType {
+        SOURCE,
         SAMPLE,
         LIBRARY,
         READGROUP
@@ -75,9 +76,11 @@ public class CrosscheckMetric extends MetricBase {
     public String LEFT_MOLECULAR_BARCODE_SEQUENCE = "";
     public String LEFT_LIBRARY = "";
     public String LEFT_SAMPLE;
+    public String LEFT_FILE;
     public String RIGHT_RUN_BARCODE = "";
     public Integer RIGHT_LANE = -1;
     public String RIGHT_MOLECULAR_BARCODE_SEQUENCE = "";
     public String RIGHT_LIBRARY = "";
     public String RIGHT_SAMPLE;
+    public String RIGHT_FILE;
 }
