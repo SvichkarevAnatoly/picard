@@ -1,6 +1,5 @@
 package picard.fingerprint;
 
-import com.sun.org.apache.regexp.internal.RE;
 import htsjdk.samtools.metrics.MetricsFile;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -189,6 +188,13 @@ public class CrosscheckReadGroupFingerprintsTest {
 
         Assert.assertFalse(metricsOutput.getMetrics().stream()
                 .anyMatch(m -> m.DATA_TYPE != expectedType));
+
+        Assert.assertFalse(metricsOutput.getMetrics().stream()
+                .anyMatch(m->m.LOD_SCORE_NORMAL_TUMOR.equals(null)));
+        Assert.assertFalse(metricsOutput.getMetrics().stream()
+                .anyMatch(m->m.LOD_SCORE.equals(null)));
+        Assert.assertFalse(metricsOutput.getMetrics().stream()
+                .anyMatch(m->m.LOD_SCORE_TUMOR_NORMAL.equals(null)));
 
         if (expectAllMatch) {
             Assert.assertTrue(metricsOutput.getMetrics().stream()
