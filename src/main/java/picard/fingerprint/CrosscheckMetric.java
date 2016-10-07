@@ -60,27 +60,48 @@ public class CrosscheckMetric extends MetricBase {
     }
 
     public enum DataType {
-        SOURCE,
+        FILE,
         SAMPLE,
         LIBRARY,
         READGROUP
     }
 
+    // The overall result of the match
     public FingerprintResult RESULT;
+    // The data type that was being compared
     public DataType DATA_TYPE;
+
+    // The resulting LOD score comparing LEFT and RIGHT data
     public Double LOD_SCORE;
+    // The resulting LOD score comparing LEFT as tumor and RIGHT as normal
     public Double LOD_SCORE_TUMOR_NORMAL;
+    // The resulting LOD score comparing LEFT as normal and RIGHT as tumor
     public Double LOD_SCORE_NORMAL_TUMOR;
-    public String LEFT_RUN_BARCODE = "";
-    public Integer LEFT_LANE = -1;
-    public String LEFT_MOLECULAR_BARCODE_SEQUENCE = "";
-    public String LEFT_LIBRARY = "";
+
+
+    // The LEFT run barcode (PU field) expected to look like : D047KACXX110901.1.ACCAACTG
+    public String LEFT_RUN_BARCODE;
+    // The LEFT lane
+    public Integer LEFT_LANE;
+    // The LEFT molecular (sample) barcode
+    public String LEFT_MOLECULAR_BARCODE_SEQUENCE;
+    // The LEFT library identifier
+    public String LEFT_LIBRARY;
+    // The LEFT sample identifier
     public String LEFT_SAMPLE;
+    // The LEFT file from which the fingerprint was obtained
     public String LEFT_FILE;
-    public String RIGHT_RUN_BARCODE = "";
-    public Integer RIGHT_LANE = -1;
-    public String RIGHT_MOLECULAR_BARCODE_SEQUENCE = "";
-    public String RIGHT_LIBRARY = "";
+
+    // The RIGHT run barcode (PU field) expected to look like : D047KACXX110901.1.ACCAACTG
+    public String RIGHT_RUN_BARCODE;
+    // The LEFT lane
+    public Integer RIGHT_LANE;
+    // The LEFT molecular (sample) barcode
+    public String RIGHT_MOLECULAR_BARCODE_SEQUENCE;
+    // The LEFT library identifier
+    public String RIGHT_LIBRARY;
+    // The LEFT sample identifier
     public String RIGHT_SAMPLE;
+    // The LEFT file from which the fingerprint was obtained
     public String RIGHT_FILE;
 }

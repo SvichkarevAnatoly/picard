@@ -10,6 +10,10 @@ import picard.vcf.SamTestUtils;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.*;
+
+import static picard.fingerprint.FingerprintIdDetails.multipleValuesString;
 
 /**
  * Tests for CrosscheckReadgroupFingerprints
@@ -35,13 +39,32 @@ public class CrosscheckReadGroupFingerprintsTest {
     static private final int NA12892_r1_RGs = 25;
     static private final int NA12892_r2_RGs = 26;
 
+    private static final Map<CrosscheckMetric.DataType, List<String>> lookupMap = new HashMap<>(4);
+    
     @BeforeTest
-    public void setup() throws IOException {
+    static public void setup() throws IOException {
         NA12891_r1 = SamTestUtils.createIndexedBam(NA12891_r1_sam, NA12891_r1_sam);
         NA12891_r2 = SamTestUtils.createIndexedBam(NA12891_r2_sam, NA12891_r2_sam);
         NA12891_named_NA12892_r1 = SamTestUtils.createIndexedBam(NA12891_named_NA12892_r1_sam, NA12891_named_NA12892_r1_sam);
         NA12892_r1 = SamTestUtils.createIndexedBam(NA12892_r1_sam, NA12892_r1_sam);
         NA12892_r2 = SamTestUtils.createIndexedBam(NA12892_r2_sam, NA12892_r2_sam);
+
+        lookupMap.put(CrosscheckMetric.DataType.FILE, new ArrayList<>());
+        lookupMap.get(CrosscheckMetric.DataType.FILE).addAll(Arrays.asList("LEFT_FILE", "RIGHT_FILE"));
+
+        lookupMap.put(CrosscheckMetric.DataType.SAMPLE, new ArrayList<>());
+        lookupMap.get(CrosscheckMetric.DataType.SAMPLE).addAll(Arrays.asList("LEFT_SAMPLE", "RIGHT_SAMPLE"));
+        lookupMap.get(CrosscheckMetric.DataType.SAMPLE).addAll(lookupMap.get(CrosscheckMetric.DataType.FILE));
+
+        lookupMap.put(CrosscheckMetric.DataType.LIBRARY, new ArrayList<>());
+        lookupMap.get(CrosscheckMetric.DataType.LIBRARY).addAll(Arrays.asList("LEFT_LIBRARY", "RIGHT_LIBRARY"));
+        lookupMap.get(CrosscheckMetric.DataType.LIBRARY).addAll(lookupMap.get(CrosscheckMetric.DataType.SAMPLE));
+
+        lookupMap.put(CrosscheckMetric.DataType.READGROUP, new ArrayList<>());
+        lookupMap.get(CrosscheckMetric.DataType.READGROUP).addAll(Arrays.asList("LEFT_RUN_BARCODE", "LEFT_LANE",
+                "LEFT_MOLECULAR_BARCODE_SEQUENCE","RIGHT_RUN_BARCODE",
+                "RIGHT_LANE", "RIGHT_MOLECULAR_BARCODE_SEQUENCE"));
+        lookupMap.get(CrosscheckMetric.DataType.READGROUP).addAll(lookupMap.get(CrosscheckMetric.DataType.LIBRARY));
     }
 
     @DataProvider(name = "bamFilesRGs")
@@ -137,12 +160,11 @@ public class CrosscheckReadGroupFingerprintsTest {
                 "OUTPUT=" + metrics.getAbsolutePath(),
                 "HAPLOTYPE_MAP=" + HAPLOTYPE_MAP,
                 "LOD_THRESHOLD=" + -1.0,
-                "CROSSCHECK_BY=SOURCE"
+                "CROSSCHECK_BY=FILE"
         };
 
-        doTest(args, metrics, expectedRetVal, 1, CrosscheckMetric.DataType.SOURCE);
+        doTest(args, metrics, expectedRetVal, 1, CrosscheckMetric.DataType.FILE);
     }
-
 
     @DataProvider(name = "bamFilesSMs")
     public Object[][] bamFilesSMs() {
@@ -178,8 +200,9 @@ public class CrosscheckReadGroupFingerprintsTest {
         doTest(args, metrics, expectedRetVal, expectedNMetrics, expectedType, false);
     }
 
-    private void doTest(final String[] args, final File metrics, final int expectedRetVal, final int expectedNMetrics, final CrosscheckMetric.DataType expectedType, final boolean expectAllMatch) throws IOException {
 
+    private void doTest(final String[] args, final File metrics, final int expectedRetVal, final int expectedNMetrics, final CrosscheckMetric.DataType expectedType, final boolean expectAllMatch) throws IOException {
+       
         final CrosscheckReadGroupFingerprints crossChecker = new CrosscheckReadGroupFingerprints();
         Assert.assertEquals(crossChecker.instanceMain(args), expectedRetVal);
 
@@ -216,5 +239,26 @@ public class CrosscheckReadGroupFingerprintsTest {
             Assert.assertTrue(metricsOutput.getMetrics().stream()
                     .anyMatch(m -> m.RESULT != CrosscheckMetric.FingerprintResult.INCONCLUSIVE));
         }
+
+        //check that fields that should have an actual value, indeed do
+        for(final String fieldName : lookupMap.get(expectedType)) {
+            try {
+                final Field field = CrosscheckMetric.class.getField(fieldName);
+                Assert.assertTrue(metricsOutput.getMetrics().stream().allMatch(m -> {
+                    try {
+                        return field.get(m) != multipleValuesString && field.get(m) != null;
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                }));
+
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+                assert false;
+            }
+        }
+
+
     }
 }

@@ -144,8 +144,8 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
             case LIBRARY:
                 groupBy = details -> details.sample + "::" + details.library;
                 break;
-            case SOURCE:
-                groupBy = details -> details.source;
+            case FILE:
+                groupBy = details -> details.file;
                 break;
             case SAMPLE:
                 groupBy = details -> details.sample;
@@ -261,17 +261,19 @@ public class CrosscheckReadGroupFingerprints extends CommandLineProgram {
         metric.LOD_SCORE_NORMAL_TUMOR = results.getLodNT();
         metric.DATA_TYPE = type;
 
-        metric.LEFT_RUN_BARCODE = leftPuDetails.molecularBarcode;
+        metric.LEFT_RUN_BARCODE = leftPuDetails.runBarcode;
         metric.LEFT_LANE = leftPuDetails.runLane;
-        metric.LEFT_MOLECULAR_BARCODE_SEQUENCE = leftPuDetails.runBarcode;
+        metric.LEFT_MOLECULAR_BARCODE_SEQUENCE = leftPuDetails.molecularBarcode;
         metric.LEFT_LIBRARY = leftPuDetails.library;
         metric.LEFT_SAMPLE = leftPuDetails.sample;
+        metric.LEFT_FILE = leftPuDetails.file;
 
         metric.RIGHT_RUN_BARCODE = rightPuDetails.runBarcode;
         metric.RIGHT_LANE = rightPuDetails.runLane;
-        metric.RIGHT_MOLECULAR_BARCODE_SEQUENCE = rightPuDetails.runBarcode;
+        metric.RIGHT_MOLECULAR_BARCODE_SEQUENCE = rightPuDetails.molecularBarcode;
         metric.RIGHT_LIBRARY = rightPuDetails.library;
         metric.RIGHT_SAMPLE = rightPuDetails.sample;
+        metric.RIGHT_FILE = rightPuDetails.file;
 
         return metric;
     }
