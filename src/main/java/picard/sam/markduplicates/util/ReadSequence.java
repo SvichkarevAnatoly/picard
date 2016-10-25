@@ -24,4 +24,8 @@ public class ReadSequence {
             hash = (hash << 4) + SequenceUtil.getReadBaseHashCode(read[i]);
         }
     }
+
+    public void setHash(long hash) {
+        this.hash = hash;
+    }
 }

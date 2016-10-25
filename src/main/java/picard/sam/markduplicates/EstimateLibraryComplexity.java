@@ -280,6 +280,8 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
                 this.out.write(val.getRead1());
                 this.out.writeInt(val.getRead2().length);
                 this.out.write(val.getRead2());
+                this.out.writeLong(val.read1.getLongHashCode());
+                this.out.writeLong(val.read2.getLongHashCode());
             } catch (final IOException ioe) {
                 throw new PicardException("Error write out read pair.", ioe);
             }
@@ -309,6 +311,9 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
                 if (this.in.read(val.getRead2()) != length) {
                     throw new PicardException("Could not read " + length + " bytes from temporary file.");
                 }
+
+                val.read1.setHash(this.in.readLong());
+                val.read2.setHash(this.in.readLong());
 
                 return val;
             } catch (final IOException ioe) {
@@ -368,22 +373,17 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
      * There is no tie-breaking, so any sort is stable, not total.
      */
     private class PairedReadComparator implements Comparator<PairedReadSequence> {
-        final int BASES = EstimateLibraryComplexity.this.MIN_IDENTICAL_BASES;
-
         public int compare(final PairedReadSequence lhs, final PairedReadSequence rhs) {
-            // First compare the first N bases of the first read
-            for (int i = 0; i < BASES; ++i) {
-                final int retval = lhs.getRead1()[i] - rhs.getRead1()[i];
-                if (retval != 0) return retval;
-            }
+            // First compare hash of the first N bases of the first read
+            final int retval1 = Long.compare(
+                    lhs.read1.getLongHashCode(),
+                    rhs.read1.getLongHashCode());
+            if (retval1 != 0) return retval1;
 
-            // Then compare the first N bases of the second read
-            for (int i = 0; i < BASES; ++i) {
-                final int retval = lhs.getRead2()[i] - rhs.getRead2()[i];
-                if (retval != 0) return retval;
-            }
-
-            return 0;
+            // Then compare hash of the first N bases of the second read
+            return Long.compare(
+                    lhs.read2.getLongHashCode(),
+                    rhs.read2.getLongHashCode());
         }
     }
 
@@ -642,13 +642,17 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
         // The loop can start from MIN_IDENTICAL_BASES because we've already confirmed that
         // at least those first few bases are identical when sorting.
         for (int i = MIN_IDENTICAL_BASES; i < read1Length; ++i) {
-            if (lhs.getRead1()[i] != rhs.getRead1()[i] && ++errors > maxErrors) {
+            final byte[] lr1 = lhs.getRead1();
+            final byte[] rr1 = rhs.getRead1();
+            if (lr1[i] != rr1[i] && ++errors > maxErrors) {
                 return false;
             }
         }
 
         for (int i = MIN_IDENTICAL_BASES; i < read2Length; ++i) {
-            if (lhs.getRead2()[i] != rhs.getRead2()[i] && ++errors > maxErrors) {
+            final byte[] lr2 = lhs.getRead2();
+            final byte[] rr2 = rhs.getRead2();
+            if (lr2[i] != rr2[i] && ++errors > maxErrors) {
                 return false;
             }
         }
@@ -665,15 +669,14 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
         final PairedReadSequence first = iterator.next();
         group.add(first);
 
-        outer:
+        final long first1hash = first.read1.getLongHashCode();
+        final long first2hash = first.read2.getLongHashCode();
         while (iterator.hasNext()) {
             final PairedReadSequence next = iterator.peek();
-            for (int i = 0; i < MIN_IDENTICAL_BASES; ++i) {
-                if (first.getRead1()[i] != next.getRead1()[i] || first.getRead2()[i] != next.getRead2()[i]) break outer;
-            }
-
+            final long next1hash = next.read1.getLongHashCode();
+            final long next2hash = next.read2.getLongHashCode();
+            if (next1hash != first1hash || next2hash != first2hash) break;
             group.add(iterator.next());
-
         }
 
         return group;
