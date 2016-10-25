@@ -45,6 +45,7 @@ import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.programgroups.Metrics;
 import picard.sam.DuplicationMetrics;
 import picard.sam.markduplicates.util.AbstractOpticalDuplicateFinderCommandLineProgram;
+import picard.sam.markduplicates.util.ReadSequence;
 import picard.sam.util.PhysicalLocationShort;
 
 import java.io.DataInputStream;
@@ -182,9 +183,29 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
     static class PairedReadSequence extends PhysicalLocationShort {
         short readGroup = -1;
         boolean qualityOk = true;
-        byte[] read1;
-        byte[] read2;
         short libraryId;
+        ReadSequence read1, read2;
+
+        public PairedReadSequence() {
+            read1 = new ReadSequence();
+            read2 = new ReadSequence();
+        }
+
+        public byte[] getRead1() {
+            return read1.getRead();
+        }
+
+        public byte[] getRead2() {
+            return read2.getRead();
+        }
+
+        public void setRead1(byte[] read1) {
+            this.read1.setRead(read1);
+        }
+
+        public void setRead2(byte[] read2) {
+            this.read2.setRead(read2);
+        }
 
         public static int getSizeInBytes() {
             return 2 + 1 + 4 + 1 + 300; // rough guess at memory footprint
@@ -200,6 +221,11 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
 
         public static SortingCollection.Codec<PairedReadSequence> getCodec() {
             return new PairedReadCodec();
+        }
+
+        public void initHashCode(final int seedLenght) {
+            read1.initHashCode(seedLenght);
+            read2.initHashCode(seedLenght);
         }
     }
 
@@ -219,8 +245,8 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
             this.x = val.getX();
             this.y = val.getY();
             this.qualityOk = val.qualityOk;
-            this.read1 = val.read1.clone();
-            this.read2 = val.read2.clone();
+            this.setRead1(val.getRead1().clone());
+            this.setRead2(val.getRead2().clone());
             this.libraryId = val.getLibraryId();
         }
 
@@ -250,10 +276,10 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
                 this.out.writeShort(val.tile);
                 this.out.writeShort(val.x);
                 this.out.writeShort(val.y);
-                this.out.writeInt(val.read1.length);
-                this.out.write(val.read1);
-                this.out.writeInt(val.read2.length);
-                this.out.write(val.read2);
+                this.out.writeInt(val.getRead1().length);
+                this.out.write(val.getRead1());
+                this.out.writeInt(val.getRead2().length);
+                this.out.write(val.getRead2());
             } catch (final IOException ioe) {
                 throw new PicardException("Error write out read pair.", ioe);
             }
@@ -273,14 +299,14 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
                 val.y = this.in.readShort();
 
                 int length = this.in.readInt();
-                val.read1 = new byte[length];
-                if (this.in.read(val.read1) != length) {
+                val.setRead1(new byte[length]);
+                if (this.in.read(val.getRead1()) != length) {
                     throw new PicardException("Could not read " + length + " bytes from temporary file.");
                 }
 
                 length = this.in.readInt();
-                val.read2 = new byte[length];
-                if (this.in.read(val.read2) != length) {
+                val.setRead2(new byte[length]);
+                if (this.in.read(val.getRead2()) != length) {
                     throw new PicardException("Could not read " + length + " bytes from temporary file.");
                 }
 
@@ -347,13 +373,13 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
         public int compare(final PairedReadSequence lhs, final PairedReadSequence rhs) {
             // First compare the first N bases of the first read
             for (int i = 0; i < BASES; ++i) {
-                final int retval = lhs.read1[i] - rhs.read1[i];
+                final int retval = lhs.getRead1()[i] - rhs.getRead1()[i];
                 if (retval != 0) return retval;
             }
 
             // Then compare the first N bases of the second read
             for (int i = 0; i < BASES; ++i) {
-                final int retval = lhs.read2[i] - rhs.read2[i];
+                final int retval = lhs.getRead2()[i] - rhs.getRead2()[i];
                 if (retval != 0) return retval;
             }
 
@@ -458,19 +484,20 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
                 final PairedReadSequenceWithBarcodes prsWithBarcodes = (useBarcodes) ? (PairedReadSequenceWithBarcodes) prs : null;
 
                 if (rec.getFirstOfPairFlag()) {
-                    prs.read1 = bases;
+                    prs.setRead1(bases);
                     if (useBarcodes) {
                         prsWithBarcodes.barcode = getBarcodeValue(rec);
                         prsWithBarcodes.readOneBarcode = getReadOneBarcodeValue(rec);
                     }
                 } else {
-                    prs.read2 = bases;
+                    prs.setRead2(bases);
                     if (useBarcodes) {
                         prsWithBarcodes.readTwoBarcode = getReadTwoBarcodeValue(rec);
                     }
                 }
 
-                if (prs.read1 != null && prs.read2 != null && prs.qualityOk) {
+                if (prs.getRead1() != null && prs.getRead2() != null && prs.qualityOk) {
+                    prs.initHashCode(MIN_IDENTICAL_BASES);
                     sorter.add(prs);
                 }
 
@@ -499,9 +526,9 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
                 final PairedReadSequence prs = group.get(0);
                 log.warn("Omitting group with over " + MAX_GROUP_RATIO + " times the expected mean number of read pairs. " +
                         "Mean=" + meanGroupSize + ", Actual=" + group.size() + ". Prefixes: " +
-                        StringUtil.bytesToString(prs.read1, 0, MIN_IDENTICAL_BASES) +
+                        StringUtil.bytesToString(prs.getRead1(), 0, MIN_IDENTICAL_BASES) +
                         " / " +
-                        StringUtil.bytesToString(prs.read2, 0, MIN_IDENTICAL_BASES));
+                        StringUtil.bytesToString(prs.getRead2(), 0, MIN_IDENTICAL_BASES));
             } else {
                 final Map<String, List<PairedReadSequence>> sequencesByLibrary = splitByLibrary(group, readGroups);
 
@@ -597,8 +624,8 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
      */
     private boolean matches(final PairedReadSequence lhs, final PairedReadSequence rhs, final double maxDiffRate, final boolean useBarcodes) {
         final int maxReadLength = (MAX_READ_LENGTH <= 0) ? Integer.MAX_VALUE : MAX_READ_LENGTH;
-        final int read1Length = Math.min(Math.min(lhs.read1.length, rhs.read1.length), maxReadLength);
-        final int read2Length = Math.min(Math.min(lhs.read2.length, rhs.read2.length), maxReadLength);
+        final int read1Length = Math.min(Math.min(lhs.getRead1().length, rhs.getRead1().length), maxReadLength);
+        final int read2Length = Math.min(Math.min(lhs.getRead2().length, rhs.getRead2().length), maxReadLength);
         final int maxErrors = (int) Math.floor((read1Length + read2Length) * maxDiffRate);
         int errors = 0;
 
@@ -615,13 +642,13 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
         // The loop can start from MIN_IDENTICAL_BASES because we've already confirmed that
         // at least those first few bases are identical when sorting.
         for (int i = MIN_IDENTICAL_BASES; i < read1Length; ++i) {
-            if (lhs.read1[i] != rhs.read1[i] && ++errors > maxErrors) {
+            if (lhs.getRead1()[i] != rhs.getRead1()[i] && ++errors > maxErrors) {
                 return false;
             }
         }
 
         for (int i = MIN_IDENTICAL_BASES; i < read2Length; ++i) {
-            if (lhs.read2[i] != rhs.read2[i] && ++errors > maxErrors) {
+            if (lhs.getRead2()[i] != rhs.getRead2()[i] && ++errors > maxErrors) {
                 return false;
             }
         }
@@ -642,7 +669,7 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
         while (iterator.hasNext()) {
             final PairedReadSequence next = iterator.peek();
             for (int i = 0; i < MIN_IDENTICAL_BASES; ++i) {
-                if (first.read1[i] != next.read1[i] || first.read2[i] != next.read2[i]) break outer;
+                if (first.getRead1()[i] != next.getRead1()[i] || first.getRead2()[i] != next.getRead2()[i]) break outer;
             }
 
             group.add(iterator.next());
