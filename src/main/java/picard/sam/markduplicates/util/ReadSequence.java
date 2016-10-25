@@ -10,7 +10,7 @@ public class ReadSequence {
         return read;
     }
 
-    public long getHash() {
+    public long getLongHashCode() {
         return hash;
     }
 
