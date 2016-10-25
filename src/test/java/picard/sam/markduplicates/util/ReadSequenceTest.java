@@ -4,8 +4,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class ReadSequenceTest {
-    public static final int SEED_LENGTH = 5;
-
     @Test
     public void hashOneReadBaseACGT() {
         final ReadSequence rs = new ReadSequence();
@@ -51,11 +49,19 @@ public class ReadSequenceTest {
         final ReadSequence rs = new ReadSequence();
         rs.setRead("M".getBytes());
         rs.initHashCode(1);
-        Assert.assertEquals(rs.getLongHashCode(), 0b11); // A & C
-        Assert.assertEquals(rs.getLongHashCode(), 3); // 0b11 == 3
+        Assert.assertEquals(rs.getLongHashCode(), 0b11); // A & C == 3
 
         rs.setRead("V".getBytes());
         rs.initHashCode(1);
         Assert.assertEquals(rs.getLongHashCode(), 0b111); // A & C & G
+    }
+
+    @Test
+    public void hash4ReadBaseLength() {
+        final ReadSequence rs = new ReadSequence();
+        rs.setRead("ACGT".getBytes());
+        rs.initHashCode(4);
+        Assert.assertEquals(rs.getLongHashCode(), 0b0001_0010_0100_1000); // 4680
+        Assert.assertEquals(rs.getLongHashCode(), 4680);
     }
 }
