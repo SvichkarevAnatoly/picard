@@ -45,8 +45,6 @@ import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.programgroups.Metrics;
 import picard.sam.DuplicationMetrics;
 import picard.sam.markduplicates.util.AbstractOpticalDuplicateFinderCommandLineProgram;
-import picard.sam.markduplicates.util.OpticalDuplicateFinder;
-import picard.sam.util.PhysicalLocation;
 import picard.sam.util.PhysicalLocationShort;
 
 import java.io.DataInputStream;
@@ -412,19 +410,13 @@ public class EstimateLibraryComplexity extends AbstractOpticalDuplicateFinderCom
         final SortingCollection<PairedReadSequence> sorter;
         final boolean useBarcodes = (null != BARCODE_TAG || null != READ_ONE_BARCODE_TAG || null != READ_TWO_BARCODE_TAG);
 
-        if (!useBarcodes) {
-            sorter = SortingCollection.newInstance(PairedReadSequence.class,
-                    new PairedReadCodec(),
-                    new PairedReadComparator(),
-                    MAX_RECORDS_IN_RAM,
-                    TMP_DIR);
-        } else {
-            sorter = SortingCollection.newInstance(PairedReadSequence.class,
-                    new PairedReadWithBarcodesCodec(),
-                    new PairedReadComparator(),
-                    MAX_RECORDS_IN_RAM,
-                    TMP_DIR);
-        }
+        final SortingCollection.Codec<PairedReadSequence> codec =
+                useBarcodes ? new PairedReadWithBarcodesCodec() : new PairedReadCodec();
+        sorter = SortingCollection.newInstance(PairedReadSequence.class,
+                codec,
+                new PairedReadComparator(),
+                MAX_RECORDS_IN_RAM,
+                TMP_DIR);
 
         // Loop through the input files and pick out the read sequences etc.
         final ProgressLogger progress = new ProgressLogger(log, (int) 1e6, "Read");
